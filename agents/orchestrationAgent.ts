@@ -1,18 +1,21 @@
 import { ChatGroq } from "npm:@langchain/groq";
 import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from "npm:@langchain/core/prompts";
-import { DecompositionSchema } from "../model/decompositionSchema.ts";
+import { DecompositionSchema } from "../schemas/decompositionSchema.ts";
+import { WorkflowStateSchema } from "../schemas/workflowSchema.ts";
+import { z } from "npm:zod";
 
 
-// Initialize the Groq LLM
 const llm = new ChatGroq({
   apiKey: "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",
   model: "llama-3.3-70b-versatile",
   maxRetries: 3,
 });
 
-// Define the orchestration function
-async function orchestrateQuery(userQuery: string) {
-  // Create the prompt template
+
+async function orchestrateQuery(state: z.infer<typeof WorkflowStateSchema>) {
+  const { userQuery } = state;
+
+  
   const prompt = ChatPromptTemplate.fromMessages([
     SystemMessagePromptTemplate.fromTemplate(
       `
@@ -52,23 +55,21 @@ async function orchestrateQuery(userQuery: string) {
     ),
   ]);
 
-  // Create the chain with structured output
+  
   const chain = prompt.pipe(
     llm.withStructuredOutput(DecompositionSchema, {
       name: "OrchestrationOutput",
     })
   );
 
-  // Invoke the chain with the user query
+ 
   const response = await chain.invoke({ userQuery });
+  console.log("Response:", response);
 
-  // Return the structured output
-  return response;
+  
+  return { ...state, tasks: response.tasks };
 }
 
-// Example usage
-(async () => {
-  const userQuery = "What are the latest advancements in the treatment of Alzheimer's disease, including the efficacy of monoclonal antibodies like Lecanemab and Donanemab? Additionally, provide a detailed comparison of the side effects of these drugs versus traditional cholinesterase inhibitors like Donepezil. Also, explore the role of amyloid-beta plaques in the progression of Alzheimer's and how current treatments target this mechanism. Finally, are there any ongoing clinical trials investigating novel therapies for early-stage Alzheimer's patients?";
-  const tasks = await orchestrateQuery(userQuery);
-  console.log("Tasks:", tasks);
-})();
+//test:
+// orchestrateQuery({ userQuery: "What are the latest advancements in the treatment of Alzheimer's disease, including the efficacy of monoclonal antibodies like Lecanemab and Donanemab? Additionally, provide a detailed comparison of the side effects of these drugs versus traditional cholinesterase inhibitors like Donepezil. Also, explore the role of amyloid-beta plaques in the progression of Alzheimer's and how current treatments target this mechanism. 
+//Finally, are there any ongoing clinical trials investigating novel therapies for early-stage Alzheimer's patients?" });
