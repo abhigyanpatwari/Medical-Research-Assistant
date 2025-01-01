@@ -1,5 +1,5 @@
 import { orchestrateQuery } from "./agents/orchestrationAgent.ts";
-import { medILlamaAgent } from "./agents/mediLlamaAgent.ts";
+import { medILlamaAgent } from "./agents/medILlama.ts";
 
 async function test(agent: string = "orchestrator") {
   const testQuery = "What are the latest advancements in the treatment of Alzheimer's disease, including the efficacy of monoclonal antibodies like Lecanemab and Donanemab?";

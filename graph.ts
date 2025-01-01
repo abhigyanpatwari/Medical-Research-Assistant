@@ -1,7 +1,7 @@
 import { StateGraph } from "npm:@langchain/langgraph";
 import { StateAnnotation } from "./utils/state.ts";
 import { orchestrateQuery } from "./agents/orchestrationAgent.ts";
-import { medILlamaAgent } from "./agents/mediLlamaAgent.ts";
+import { medILlamaAgent } from "./agents/medILlama.ts";
 import { webSearchAgent } from "./agents/webSearchAgent.ts";
 import { ragAgent } from "./agents/ragAgent.ts";
 import { aggregateResponses } from "./agents/aggregationAgent.ts";

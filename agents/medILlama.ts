@@ -25,9 +25,14 @@ export async function medILlamaAgent(state: StateType) {
         6. Be precise and concise while maintaining completeness
         7. If there are multiple aspects to the query, address each one systematically
 
-        Your response will be combined with:
+          Remember: Your output will be combined with:
         - Latest research findings from a RAG system
         - Current medical developments from web searches
+        - Other expert medical opinions
+        
+        IMPORTANT: 
+        -Structure your response to facilitate seamless integration with these sources.
+        -Generate a detailed but short response without being too verbose.
       `),
       HumanMessagePromptTemplate.fromTemplate("Medical Query: {query}")
     ]);
