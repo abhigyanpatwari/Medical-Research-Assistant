@@ -6,13 +6,13 @@ import { z } from "npm:zod";
 
 
 const llm = new ChatGroq({
-  apiKey: "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",
+  apiKey: Deno.env.get("GROQ_API_KEY") as string,
   model: "llama-3.3-70b-versatile",
   maxRetries: 3,
 });
 
 
-async function orchestrateQuery(state: z.infer<typeof WorkflowStateSchema>) {
+export async function orchestrateQuery(state: z.infer<typeof WorkflowStateSchema>) {
   const { userQuery } = state;
 
   
