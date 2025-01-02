@@ -30,20 +30,6 @@ export async function orchestrateQuery(state: z.infer<typeof WorkflowStateSchema
 
       Assign tasks to the appropriate agents based on the user's query. You can assign multiple tasks to the same agent if necessary.
 
-      Example: 
-      {{
-        "MedILlama": [
-          {{ "query": "What are the common side effects of Levodopa?" }},
-          {{ "query": "What are the long-term effects of Levodopa?" }}
-        ],
-        "Web": [
-          {{ "query": "Research on latest treatments for Parkinson's disease" }}
-        ],
-        "RAG": [
-          {{ "query": "Provide detailed information on the mechanism of action of dopamine agonists" }}
-        ]
-      }}
-
       IMPORTANT: Use the specific keywords for the agents:
       - MedILlama
       - Web
