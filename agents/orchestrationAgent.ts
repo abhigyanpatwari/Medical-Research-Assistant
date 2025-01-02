@@ -3,6 +3,7 @@ import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemp
 import { DecompositionSchema } from "../schemas/decompositionSchema.ts";
 import { WorkflowStateSchema } from "../schemas/workflowSchema.ts";
 import { z } from "npm:zod";
+import { taskDecompositionPrompt } from "../utils/prompts.ts";
 
 
 const llm = new ChatGroq({
@@ -16,30 +17,32 @@ export async function orchestrateQuery(state: z.infer<typeof WorkflowStateSchema
   const { userQuery } = state;
 
   
-  const prompt = ChatPromptTemplate.fromMessages([
-    SystemMessagePromptTemplate.fromTemplate(
-      `
-      You are an expert in medical research. Your task is to analyze the user's query, assign 
-      information-gathering tasks to specialized agents, and orchestrate the workflow. You have access to the following agents:
+  // const prompt = ChatPromptTemplate.fromMessages([
+  //   SystemMessagePromptTemplate.fromTemplate(
+  //     `
+  //     You are an expert in medical research. Your task is to analyze the user's query, assign 
+  //     information-gathering tasks to specialized agents, and orchestrate the workflow. You have access to the following agents:
 
-      MedILlama: A medical fine-tuned LLM for gathering general medical knowledge (e.g., symptoms, side effects, basic mechanisms).
+  //     MedILlama: A medical fine-tuned LLM for gathering general medical knowledge (e.g., symptoms, side effects, basic mechanisms).
 
-      Web Search Agent: For gathering real-time, up-to-date information (e.g., latest treatments, clinical trials, recent studies).
+  //     Web Search Agent: For gathering real-time, up-to-date information (e.g., latest treatments, clinical trials, recent studies).
 
-      RAG Database Search Agent: For retrieving detailed, document-level information (e.g., mechanisms of action, in-depth research papers).
+  //     RAG Database Search Agent: For retrieving detailed, document-level information (e.g., mechanisms of action, in-depth research papers).
 
-      Assign tasks to the appropriate agents based on the user's query. You can assign multiple tasks to the same agent if necessary.
+  //     Assign tasks to the appropriate agents based on the user's query. You can assign multiple tasks to the same agent if necessary.
 
-      IMPORTANT: Use the specific keywords for the agents:
-      - MedILlama
-      - Web
-      - RAG
-      `
-    ),
-    HumanMessagePromptTemplate.fromTemplate(
-      "Assign information-gathering tasks to the above agents to answer the user's query: {userQuery}"
-    ),
-  ]);
+  //     IMPORTANT: Use the specific keywords for the agents:
+  //     - MedILlama
+  //     - Web
+  //     - RAG
+  //     `
+  //   ),
+  //   HumanMessagePromptTemplate.fromTemplate(
+  //     "Assign information-gathering tasks to the above agents to answer the user's query: {userQuery}"
+  //   ),
+  // ]);
+
+  const prompt = taskDecompositionPrompt;
 
   
   const chain = prompt.pipe(

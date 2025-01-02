@@ -3,7 +3,7 @@ import { medILlamaAgent } from "./agents/medILlama.ts";
 import { webSearchAgent } from "./agents/webSearchAgent.ts";
 
 async function test(agent: string = "orchestrator") {
-  const testQuery = "What are the latest advancements in the treatment of Alzheimer's disease, including the efficacy of monoclonal antibodies like Lecanemab and Donanemab?";
+  const testQuery = "Can you provide a detailed analysis of the current state of immunotherapy for melanoma, including its mechanisms of action, efficacy compared to traditional treatments, common side effects, and the latest advancements or clinical trials in this field?";
 
   try {
     let result;
