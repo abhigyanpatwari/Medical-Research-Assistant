@@ -1,8 +1,8 @@
 import { ChatGroq } from "npm:@langchain/groq";
-import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from "npm:@langchain/core/prompts";
 import { WorkflowStateSchema } from "../schemas/workflowSchema.ts";
 import { z } from "npm:zod";
 import { TavilySearchResults } from "npm:@langchain/community/tools/tavily_search"
+import { searchPlanPrompt, searchSummaryPrompt } from "../utils/prompts.ts";
 
 const llm = new ChatGroq({
   apiKey: Deno.env.get("GROQ_API_KEY") as string,
@@ -11,40 +11,56 @@ const llm = new ChatGroq({
 });
 
 const tavilyTool = new TavilySearchResults({ 
-  apiKey: Deno.env.get("TAVILY_API_KEY") as string ,
-  maxResults: 5,
+  apiKey: Deno.env.get("TAVILY_API_KEY") as string,
+  maxResults: 2,
 });
 
 export async function webSearchAgent(state: z.infer<typeof WorkflowStateSchema>) {
   const { userQuery } = state;
 
-  // First, get search queries from LLM
-  const searchPrompt = ChatPromptTemplate.fromMessages([
-    SystemMessagePromptTemplate.fromTemplate(
-      `You are a web search expert specializing in medical and scientific information. 
-      Given the query, generate 2-3 specific search terms that will yield relevant medical information.
-      Respond with ONLY the search terms, one per line.`
-    ),
-    HumanMessagePromptTemplate.fromTemplate("{userQuery}"),
-  ]);
+  console.log("1. Generating search plan...");
+  const planChain = searchPlanPrompt.pipe(llm);
+  const searchPlan = await planChain.invoke({ userQuery });
 
-  // Get search queries from LLM
-  const chain = searchPrompt.pipe(llm);
-  const searchQueriesResponse = await chain.invoke({ userQuery });
-
-  // Split the response into individual queries
-  const searchQueries = searchQueriesResponse.content
+  console.log("2. Extracting search queries...");
+  const searchQueries = searchPlan.content
     .toString()
     .split('\n')
     .filter(q => q.trim());
+  console.log("Generated queries:", searchQueries);
 
-  // Execute searches
-  const searchResults = await Promise.all(
-    searchQueries.map(query => tavilyTool.invoke(query))
-  );
+  console.log("3. Executing searches and summarizing results...");
+  let allSummaries = [];
+  
+  for (const query of searchQueries) {
+    try {
+      console.log(`\nSearching for: "${query}"`);
+      const results = await tavilyTool.invoke(query);
+      
+      console.log(`Summarizing results for: "${query}"`);
+      const summaryChain = searchSummaryPrompt.pipe(llm);
+      const batchSummary = await summaryChain.invoke({
+        searchResults: JSON.stringify(results)
+      });
 
+      if (batchSummary.content) {
+        allSummaries.push({
+          query,
+          summary: batchSummary.content.toString()
+        });
+      }
+    } catch (error) {
+      console.error(`Error processing query "${query}":`, error);
+    }
+  }
+
+  console.log("\n4. Preparing final response...");
   return { 
-    ...state, 
-    webSearchResults: searchResults.flat() 
+    ...state,
+    webSearchResults: allSummaries,
+    searchQueries,
+    searchSummary: allSummaries.length > 0 ? 
+      allSummaries.map(s => `Results for "${s.query}":\n${s.summary}`).join('\n\n') :
+      "No results found."
   };
 }

@@ -37,23 +37,29 @@ async function test(agent: string = "orchestrator") {
         break;
 
       case "w":
-        // Test state with predefined Web Search tasks
+        // Test state for Web Search agent
         result = await webSearchAgent({
           userQuery: testQuery,
-          tasks: [
-            { query: "Latest clinical trial results Lecanemab Donanemab Alzheimer's" },
-            { query: "Recent FDA approvals monoclonal antibodies Alzheimer's treatment" }
-          ],
+          tasks: [],
           results: {}
         });
-        console.log("Web Search Result:");
+        console.log("\n=== Web Search Results ===");
+        console.log("\nSearch Queries Generated:");
+        console.log(result.searchQueries.join('\n'));
+        
+        console.log("\nSearch Summary:");
+        console.log(result.searchSummary);
+        
+        console.log("\nRaw Search Results:");
+        console.log("Total results:", result.webSearchResults.length);
+        // Only show first 2 results to avoid cluttering console
+        console.log(JSON.stringify(result.webSearchResults.slice(0, 2), null, 2));
         break;
 
       default:
         throw new Error("Unknown agent type");
     }
 
-    console.log(JSON.stringify(result, null, 2));
   } catch (error) {
     console.error("Error:", error);
   }
