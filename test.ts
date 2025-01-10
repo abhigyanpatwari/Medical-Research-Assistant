@@ -18,7 +18,7 @@ async function test(agent: string = "orchestrator") {
         break;
 
       case "m":
-        // Test state with predefined MedILlama tasks
+        // Test state with predefined MedILlama tasks 
         result = await medILlamaAgent({
           userQuery: testQuery,
           tasks: {
@@ -34,6 +34,11 @@ async function test(agent: string = "orchestrator") {
           finalResponse: ""
         });
         console.log("MedILlama Result:");
+        console.log("\nResponses:");
+        result.medILlamaResponse.forEach((response, index) => {
+          console.log(`\nQuery ${index + 1}: ${response.metadata.task}`);
+          console.log("Response:", response.content);
+        });
         break;
 
       case "w":

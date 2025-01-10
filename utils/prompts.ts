@@ -25,9 +25,6 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
     IMPORTANT: You may generate multiple tasks for the same agent if the information needed is related to the same field.
 
     IMPORTANT: The tasks assigned to each agent should be really detailed and specific. Also the tasks should be in tone of instructions to the agents.
-
-    
-
     `
   ),
   HumanMessagePromptTemplate.fromTemplate("{userQuery}"),
@@ -72,7 +69,7 @@ export const searchPlanPrompt = ChatPromptTemplate.fromMessages([
 
     IMPORTANT:
     - Generate simple, natural language search queries
-    -Generate only 3-4 search queries unless absolutely necessary to cover all aspects of the query.
+    - Generate only 3-4 search queries unless absolutely necessary to cover all aspects of the query.
     - Each query should be clear and focused on one aspect
     - Use proper medical terminology
     - Do NOT use boolean operators (AND, OR) or parentheses
