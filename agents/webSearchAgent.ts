@@ -13,7 +13,7 @@ const llm = new ChatGroq({
 
 const tavilyTool = new TavilySearchResults({ 
   apiKey: Deno.env.get("TAVILY_API_KEY") as string,
-  maxResults: 2,
+  maxResults: 5,
 });
 
 export async function webSearchAgent(state: StateType) {

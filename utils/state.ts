@@ -25,4 +25,8 @@ export const StateAnnotation = {
     value: (_old: string, update: string) => update,
     default: () => "",
   },
+  isSimpleQuery: {
+    value: (_old: boolean, update: boolean) => update,
+    default: () => false,
+  },
 };

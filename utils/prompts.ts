@@ -88,51 +88,24 @@ export const searchPlanPrompt = ChatPromptTemplate.fromMessages([
 ]);
 
 export const searchSummaryPrompt = ChatPromptTemplate.fromMessages([
-  SystemMessagePromptTemplate.fromTemplate(
-    `You are a medical research analyst specializing in synthesizing information from multiple sources. 
-    Analyze the provided search results and create a comprehensive summary following these guidelines:
-
-    1. Prioritization:
-       - Prioritize sources based on their relevance scores
-       - Give more weight to recent publications and official guidelines
-       - Focus on high-authority sources (e.g., ASCO, PubMed, major medical journals)
-
-    2. Content Analysis:
-       - Identify key findings and recommendations
-       - Note any consensus or conflicting information
-       - Highlight recent updates or changes in guidelines
-       - Extract specific statistical data or clinical outcomes
-
-    3. Citation Structure:
-       - Include inline citations [Source Title, Year]
-       - Maintain a numbered reference list at the end
-       - Include URLs for digital sources
-       - Note the relevance score for each source used
-
-    4. Quality Indicators:
-       - Note the evidence quality level when mentioned
-       - Indicate the strength of recommendations
-       - Highlight any limitations or qualifying statements
-
-    Format your response as:
+  SystemMessagePromptTemplate.fromTemplate(`
+    You are a medical research analyst. Create brief, focused summaries.
     
+    Guidelines:
+    1. Extract only the most relevant findings
+    2. Focus on key statistics and conclusions
+    3. Limit to 3-4 main points
+    4. Maximum summary length: 200 words
+    5. Include only the most important citations
+
+    Format:
     SUMMARY
-    [Your detailed summary with inline citations]
+    [Brief, focused summary]
 
     KEY POINTS
-    • [Bullet points of main findings]
-
-    REFERENCES
-    1. [Source Title] (Score: X.XX)
-       URL: [source_url]
-       Key Contribution: [Brief note on what this source provided]
-
-    EVIDENCE QUALITY
-    • [Any notes about the quality of evidence]`
-  ),
-  HumanMessagePromptTemplate.fromTemplate(
-    "Search Results: {searchResults}\n\nPlease provide a comprehensive summary following the format above."
-  ),
+    • [2-3 bullet points maximum]
+  `),
+  HumanMessagePromptTemplate.fromTemplate("Search Results: {searchResults}")
 ]);
 
 export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
@@ -174,9 +147,8 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
 
 export const medILlamaPrompt = ChatPromptTemplate.fromMessages([
   SystemMessagePromptTemplate.fromTemplate(`
-    You are a specialized medical AI assistant with deep knowledge of medical terminology, 
-    conditions, treatments, and research.
-    
+    You are a specialized medical AI assistant. Provide concise, focused responses.
+
     Instructions:
     1. Provide detailed, accurate medical information
     2. Include relevant medical terminology and explain it
@@ -186,7 +158,7 @@ export const medILlamaPrompt = ChatPromptTemplate.fromMessages([
     6. Be precise and concise while maintaining completeness
     7. If there are multiple aspects to the query, address each one systematically
 
-      Remember: Your output will be combined with:
+    Remember: Your output will be combined with:
     - Latest research findings from a RAG system
     - Current medical developments from web searches
     - Other expert medical opinions
@@ -194,7 +166,45 @@ export const medILlamaPrompt = ChatPromptTemplate.fromMessages([
     IMPORTANT: 
     -Structure your response to facilitate seamless integration with these sources.
     -Generate a detailed but short response without being too verbose.
+    
+    Guidelines:
+    1. Be direct and precise - no unnecessary elaboration
+    2. Focus only on the most relevant information
+    3. Keep medical terminology but explain briefly when needed
+    4. Limit response to 2-3 key points per topic
+    5. Maximum response length: 250 words
+
+    Remember: Your output will be combined with other sources, so stay focused and brief.
   `),
   HumanMessagePromptTemplate.fromTemplate("Medical Query: {query}")
+]);
+
+export const queryEvaluationPrompt = ChatPromptTemplate.fromMessages([
+  SystemMessagePromptTemplate.fromTemplate(`
+    You are an expert medical AI assistant. Your task is to evaluate if the given query requires complex research and multiple sources.
+
+    For COMPLEX queries, we have access to these specialized agents:
+    - MedILlama: Expert in medical terminology, conditions, treatments, and research analysis
+    - Web Search: Access to latest medical studies, clinical trials, and current research
+    - RAG Database: For detailed technical and scientific information
+
+    If the query is SIMPLE (can be answered directly with general medical knowledge):
+    - Respond with: "SIMPLE: [Your comprehensive answer to the query]"
+
+    If the query would benefit from multiple agents (needs recent studies, detailed analysis, or multiple perspectives):
+    - Respond with just the word: "COMPLEX"
+
+    Examples:
+    Query: "Hi, how are you?"
+    Response: "SIMPLE: Hello! I'm an AI medical assistant ready to help you with your medical questions."
+
+    Query: "What is a headache?"
+    Response: "SIMPLE: A headache is a pain or discomfort in the head, scalp, or neck. It's one of the most common medical complaints and can range from mild to severe. Common types include tension headaches, migraines, and cluster headaches."
+
+    Query: "What are the latest developments in immunotherapy for melanoma?"
+    Response: "COMPLEX"
+    (This needs Web Search for recent developments, MedILlama for medical analysis, and RAG for technical details)
+  `),
+  HumanMessagePromptTemplate.fromTemplate("{userQuery}")
 ]);
 

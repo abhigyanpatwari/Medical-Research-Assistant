@@ -17,4 +17,13 @@ export const StateSchema = z.object({
   finalResponse: z.string()
 });
 
-export type StateType = z.infer<typeof StateSchema>; 
+export interface StateType {
+  messages: BaseMessage[];
+  userQuery: string;
+  medILlamaResponse: { content: string; metadata?: Record<string, any> }[];
+  webSearchResponse: { content: string; metadata?: Record<string, any> }[];
+  finalResponse: string;
+  tasks?: any;
+  isSimpleQuery: boolean;
+} 
+
