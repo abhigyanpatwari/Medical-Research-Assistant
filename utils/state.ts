@@ -1,4 +1,3 @@
-
 import { BaseMessage } from "npm:@langchain/core/messages";
 
 export const StateAnnotation = {
@@ -15,11 +14,11 @@ export const StateAnnotation = {
     default: () => ({}),
   },
   medILlamaResponse: {
-    value: (_old: any[], update: any[]) => update,
+    value: (_old: any[], update: any[]) => [...(_old || []), ...update],
     default: () => [],
   },
   webSearchResponse: {
-    value: (_old: any[], update: any[]) => update,
+    value: (_old: any[], update: any[]) => [...(_old || []), ...update],
     default: () => [],
   },
   finalResponse: {

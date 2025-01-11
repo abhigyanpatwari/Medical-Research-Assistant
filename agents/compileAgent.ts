@@ -34,6 +34,7 @@ export async function compileAgent(state: StateType) {
       userQuery: state.userQuery,
       medILlamaResponse: medILlamaText,
       webSearchResponse: webSearchText,
+      ragResponse: ""
     });
 
     console.log("Compilation completed successfully");

@@ -1,8 +1,8 @@
 import { ChatGroq } from "npm:@langchain/groq";
 import { DecompositionSchema } from "../schemas/decompositionSchema.ts";
-import { WorkflowStateSchema } from "../schemas/workflowSchema.ts";
-import { z } from "npm:zod";
 import { taskDecompositionPrompt } from "../utils/prompts.ts";
+import { StateType } from "../schemas/stateSchema.ts";
+
 
 
 const llm = new ChatGroq({

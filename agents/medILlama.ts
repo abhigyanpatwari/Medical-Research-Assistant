@@ -13,10 +13,10 @@ export async function medILlamaAgent(state: StateType) {
 
   for (const task of tasks) {
     const chain = medILlamaPrompt.pipe(llm);
-    const response = await chain.invoke({ query: task.query });
+    const response: any = await chain.invoke({ query: task.query });
 
     responses.push({
-      content: response,
+      content: typeof response === 'string' ? response : response.content?.toString() || response.toString(),
       metadata: { task: task.query }
     });
   }

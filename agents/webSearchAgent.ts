@@ -3,6 +3,7 @@ import { WorkflowStateSchema } from "../schemas/workflowSchema.ts";
 import { z } from "npm:zod";
 import { TavilySearchResults } from "npm:@langchain/community/tools/tavily_search"
 import { searchPlanPrompt, searchSummaryPrompt } from "../utils/prompts.ts";
+import { StateType } from "../schemas/stateSchema.ts";
 
 const llm = new ChatGroq({
   apiKey: Deno.env.get("GROQ_API_KEY") as string,
@@ -15,7 +16,7 @@ const tavilyTool = new TavilySearchResults({
   maxResults: 2,
 });
 
-export async function webSearchAgent(state: z.infer<typeof WorkflowStateSchema>) {
+export async function webSearchAgent(state: StateType) {
   const { userQuery } = state;
 
   console.log("1. Generating search plan...");
@@ -55,12 +56,13 @@ export async function webSearchAgent(state: z.infer<typeof WorkflowStateSchema>)
   }
 
   console.log("\n4. Preparing final response...");
+  const webSearchResponse = allSummaries.map(s => ({
+    content: s.summary,
+    metadata: { query: s.query }
+  }));
+
   return { 
     ...state,
-    webSearchResults: allSummaries,
-    searchQueries,
-    searchSummary: allSummaries.length > 0 ? 
-      allSummaries.map(s => `Results for "${s.query}":\n${s.summary}`).join('\n\n') :
-      "No results found."
+    webSearchResponse
   };
 }
