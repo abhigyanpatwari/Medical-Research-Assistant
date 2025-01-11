@@ -14,7 +14,6 @@ export const StateSchema = z.object({
   tasks: z.any(),
   medILlamaResponse: z.array(AgentResponse),
   webSearchResponse: z.array(AgentResponse),
-  ragResponse: z.array(AgentResponse),
   finalResponse: z.string()
 });
 

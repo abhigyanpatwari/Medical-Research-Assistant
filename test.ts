@@ -1,6 +1,7 @@
 import { orchestrateQuery } from "./agents/orchestrationAgent.ts";
 import { medILlamaAgent } from "./agents/medILlama.ts";
 import { webSearchAgent } from "./agents/webSearchAgent.ts";
+import { compileAgent } from "./agents/compileAgent.ts";
 
 async function test(agent: string = "orchestrator") {
   const testQuery = "Can you provide a detailed analysis of the current state of immunotherapy for melanoma, including its mechanisms of action, efficacy compared to traditional treatments, common side effects, and the latest advancements or clinical trials in this field?";
@@ -59,6 +60,40 @@ async function test(agent: string = "orchestrator") {
         console.log("Total results:", result.webSearchResults.length);
         // Only show first 2 results to avoid cluttering console
         console.log(JSON.stringify(result.webSearchResults.slice(0, 2), null, 2));
+        break;
+
+      case "c":
+        result = await compileAgent({
+          userQuery: testQuery,
+          tasks: {
+            MedILlama: [
+              { query: "Explain the mechanism of action of Lecanemab and Donanemab" },
+              { query: "What are the latest clinical trial results for these monoclonal antibodies?" }
+            ]
+          },
+          messages: [],
+          medILlamaResponse: [
+            {
+              content: "Detailed explanation of mechanism of action...",
+              metadata: { task: "Explain the mechanism of action of Lecanemab and Donanemab" }
+            },
+            {
+              content: "Latest clinical trial results show...",
+              metadata: { task: "What are the latest clinical trial results for these monoclonal antibodies?" }
+            }
+          ],
+          webSearchResponse: {
+            searchSummary: "Recent studies on immunotherapy...",
+            webSearchResults: [
+              { title: "Recent Advances in Melanoma Treatment", content: "..." },
+              { title: "Clinical Trial Results 2024", content: "..." }
+            ]
+          },
+          ragResponse: "Additional context from medical literature...",
+          finalResponse: ""
+        });
+        console.log("\n=== Compiled Report ===");
+        console.log(result.finalResponse);
         break;
 
       default:

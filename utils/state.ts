@@ -1,41 +1,29 @@
-import { Annotation, messagesStateReducer } from "npm:@langchain/langgraph";
-import { StateSchema } from "../schemas/stateSchema.ts";
-import { BaseMessage} from "npm:@langchain/core/messages";
 
-// Custom reducer for tasks
-const tasksReducer = (existing: any[] = [], update: any[] | "clear") => {
-  if (update === "clear") return [];
-  return [...existing, ...update];
-};
+import { BaseMessage } from "npm:@langchain/core/messages";
 
-// Define the complete state annotation using StateSchema
-export const StateAnnotation = Annotation.Root({
-  messages: Annotation<BaseMessage[]>({
-    reducer: messagesStateReducer,
+export const StateAnnotation = {
+  messages: {
+    value: (old: BaseMessage[], update: BaseMessage[]) => [...old, ...update],
     default: () => [] as BaseMessage[],
-  }),
-  userQuery: Annotation<string>({
+  },
+  userQuery: {
     value: (_old: string, update: string) => update,
     default: () => "",
-  }),
-  tasks: Annotation<any[]>({
-    reducer: tasksReducer,
+  },
+  tasks: {
+    value: (_old: any, update: any) => update,
+    default: () => ({}),
+  },
+  medILlamaResponse: {
+    value: (_old: any[], update: any[]) => update,
     default: () => [],
-  }),
-  medILlamaResponse: Annotation<any[]>({
-    value: (old, update) => [...old, ...update],
+  },
+  webSearchResponse: {
+    value: (_old: any[], update: any[]) => update,
     default: () => [],
-  }),
-  webSearchResponse: Annotation<any[]>({
-    value: (old, update) => [...old, ...update],
-    default: () => [],
-  }),
-  ragResponse: Annotation<any[]>({
-    value: (old, update) => [...old, ...update],
-    default: () => [],
-  }),
-  finalResponse: Annotation<string>({
-    value: (_old, update) => update,
+  },
+  finalResponse: {
+    value: (_old: string, update: string) => update,
     default: () => "",
-  })
-});
+  },
+};

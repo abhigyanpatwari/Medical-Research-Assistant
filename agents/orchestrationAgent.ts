@@ -12,27 +12,19 @@ const llm = new ChatGroq({
 });
 
 
-export async function orchestrateQuery(state: z.infer<typeof WorkflowStateSchema>) {
+export async function orchestrateQuery(state: StateType) {
   const { userQuery } = state;
-
-
-  const prompt = taskDecompositionPrompt;
-
-  
-  const chain = prompt.pipe(
-    llm.withStructuredOutput(DecompositionSchema, {
-      name: "OrchestrationOutput",
-    })
+  const chain = taskDecompositionPrompt.pipe(
+    llm.withStructuredOutput(DecompositionSchema)
   );
-
- 
-  const response = await chain.invoke({ userQuery });
-  console.log("Response:", response);
-
   
-  return { ...state, tasks: response.tasks };
+  const response = await chain.invoke({ userQuery });
+  
+  return { 
+    ...state, 
+    tasks: {
+      MedILlama: response.tasks.MedILlama || [],
+      WebSearch: response.tasks.Web || []
+    }
+  };
 }
-
-//test:
-// orchestrateQuery({ userQuery: "What are the latest advancements in the treatment of Alzheimer's disease, including the efficacy of monoclonal antibodies like Lecanemab and Donanemab? Additionally, provide a detailed comparison of the side effects of these drugs versus traditional cholinesterase inhibitors like Donepezil. Also, explore the role of amyloid-beta plaques in the progression of Alzheimer's and how current treatments target this mechanism. 
-//Finally, are there any ongoing clinical trials investigating novel therapies for early-stage Alzheimer's patients?" });
