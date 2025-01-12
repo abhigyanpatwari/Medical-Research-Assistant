@@ -9,21 +9,20 @@ const llm = new ChatGroq({
 });
 
 export async function evaluationAgent(state: StateType) {
-  console.log("\n🔍 Evaluating Query");
+  
   const chain = queryEvaluationPrompt.pipe(llm);
   const evaluation = await chain.invoke({ userQuery: state.userQuery });
   const response = evaluation.content.toString();
 
   if (response.startsWith("SIMPLE:")) {
-    console.log("✨ Simple query detected");
+    
     return {
       ...state,
       finalResponse: response.substring(7).trim(),
       isSimpleQuery: true
     };
   }
-
-  console.log("🔄 Complex query detected");
+  
   return {
     ...state,
     isSimpleQuery: false
