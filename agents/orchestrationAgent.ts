@@ -26,7 +26,7 @@ export async function orchestrateQuery(state: StateType) {
     return { 
       ...state,
       finalResponse: response.substring(7).trim(),
-      tasks: { MedILlama: [], WebSearch: [] } // Empty tasks to prevent agent execution
+      tasks: { MedILlama: [], WebSearch: [], RAG: [] }
     };
   }
 
@@ -37,11 +37,31 @@ export async function orchestrateQuery(state: StateType) {
   );
   
   const tasks = await chain.invoke({ userQuery });
+
+  // Log the decomposed tasks in a formatted way
+  console.log("\n📝 Task decomposition complete:");
+  
+  console.log("\nMedILlama Tasks:");
+  tasks.tasks.MedILlama?.forEach((task, index) => {
+    console.log(`  ${index + 1}. ${task.query}`);
+  });
+  
+  console.log("\nWebSearch Tasks:");
+  tasks.tasks.Web?.forEach((task, index) => {
+    console.log(`  ${index + 1}. ${task.query}`);
+  });
+  
+  console.log("\nRAG Tasks:");
+  tasks.tasks.RAG?.forEach((task, index) => {
+    console.log(`  ${index + 1}. ${task.query}`);
+  });
+
   return { 
     ...state, 
     tasks: {
       MedILlama: tasks.tasks.MedILlama || [],
-      WebSearch: tasks.tasks.Web || []
+      WebSearch: tasks.tasks.Web || [],
+      RAG: tasks.tasks.RAG || []
     }
   };
 }
