@@ -9,7 +9,7 @@ const llm = new ChatGroq({
 });
 
 export async function compileAgent(state: StateType) {
-  console.log("\n📚 Compiling Results");
+  // console.log("\n📚 Compiling Results");
   
   if (!state.medILlamaResponse?.length || !state.webSearchResponse?.length) {
     return state;
@@ -29,14 +29,14 @@ export async function compileAgent(state: StateType) {
       ragResponse: ""
     });
 
-    console.log("✨ Compilation Complete");
+    // console.log("✨ Compilation Complete");
     return {
       ...state,
       finalResponse: response.content.toString()
     };
   } catch (err: unknown) {
     const error = err as Error;
-    console.error("❌ Compilation failed:", error.message);
+    // console.error("❌ Compilation failed:", error.message);
     throw error;
   }
 }

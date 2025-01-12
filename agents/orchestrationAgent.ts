@@ -16,7 +16,7 @@ export async function orchestrateQuery(state: StateType) {
   const { userQuery } = state;
   
   // First evaluate query complexity
-  console.log("🤔 Evaluating query complexity...");
+  // console.log("🤔 Evaluating query complexity...");
   const evaluationChain = queryEvaluationPrompt.pipe(llm);
   const evaluation = await evaluationChain.invoke({ userQuery });
   const response = evaluation.content.toString();
@@ -31,30 +31,30 @@ export async function orchestrateQuery(state: StateType) {
   }
 
   // For complex queries, proceed with task decomposition
-  console.log("🔄 Complex query detected, initiating full workflow...");
+  // console.log("🔄 Complex query detected, initiating full workflow...");
   const chain = taskDecompositionPrompt.pipe(
     llm.withStructuredOutput(DecompositionSchema)
   );
   
   const tasks = await chain.invoke({ userQuery });
 
-  // Log the decomposed tasks in a formatted way
-  console.log("\n📝 Task decomposition complete:");
+  // // Log the decomposed tasks in a formatted way
+  // // console.log("\n📝 Task decomposition complete:");
   
-  console.log("\nMedILlama Tasks:");
-  tasks.tasks.MedILlama?.forEach((task, index) => {
-    console.log(`  ${index + 1}. ${task.query}`);
-  });
+  // // console.log("\nMedILlama Tasks:");
+  // tasks.tasks.MedILlama?.forEach((task, index) => {
+  //   // console.log(`  ${index + 1}. ${task.query}`);
+  // });
   
-  console.log("\nWebSearch Tasks:");
-  tasks.tasks.Web?.forEach((task, index) => {
-    console.log(`  ${index + 1}. ${task.query}`);
-  });
+  // console.log("\nWebSearch Tasks:");
+  // tasks.tasks.Web?.forEach((task, index) => {
+  //   console.log(`  ${index + 1}. ${task.query}`);
+  // });
   
-  console.log("\nRAG Tasks:");
-  tasks.tasks.RAG?.forEach((task, index) => {
-    console.log(`  ${index + 1}. ${task.query}`);
-  });
+  // console.log("\nRAG Tasks:");
+  // tasks.tasks.RAG?.forEach((task, index) => {
+  //   console.log(`  ${index + 1}. ${task.query}`);
+  // });
 
   return { 
     ...state, 

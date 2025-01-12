@@ -9,7 +9,7 @@ const llm = new Ollama({
 });
 
 export async function medILlamaAgent(state: StateType) {
-  console.log("\n🏥 MedILlama Agent Started");
+  // console.log("\n🏥 MedILlama Agent Started");
   const tasks = state.tasks.MedILlama || [];
   const responses = [];
 
@@ -22,6 +22,6 @@ export async function medILlamaAgent(state: StateType) {
     });
   }
 
-  console.log(`🏥 MedILlama Agent Completed (${responses.length} responses)`);
+  // console.log(`🏥 MedILlama Agent Completed (${responses.length} responses)`);
   return { ...state, medILlamaResponse: responses };
 }
