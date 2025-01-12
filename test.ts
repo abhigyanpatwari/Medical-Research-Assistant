@@ -51,15 +51,13 @@ async function test(agent: string = "orchestrator") {
         });
         console.log("\n=== Web Search Results ===");
         console.log("\nSearch Queries Generated:");
-        console.log(result.searchQueries.join('\n'));
+        result.webSearchResponse.forEach(r => console.log(`• ${r.query}`));
         
-        console.log("\nSearch Summary:");
-        console.log(result.searchSummary);
-        
-        console.log("\nRaw Search Results:");
-        console.log("Total results:", result.webSearchResults.length);
-        // Only show first 2 results to avoid cluttering console
-        console.log(JSON.stringify(result.webSearchResults.slice(0, 2), null, 2));
+        console.log("\nSearch Summaries:");
+        result.webSearchResponse.forEach(r => {
+          console.log(`\nQuery: ${r.query}`);
+          console.log(`Summary: ${r.summary}`);
+        });
         break;
 
       case "c":

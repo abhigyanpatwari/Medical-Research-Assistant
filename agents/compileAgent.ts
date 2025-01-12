@@ -9,27 +9,19 @@ const llm = new ChatGroq({
 });
 
 export async function compileAgent(state: StateType) {
-  console.log("\nCompile Agent Status:");
-  console.log("- MedILlama responses:", state.medILlamaResponse?.length || 0);
-  console.log("- Web Search responses:", state.webSearchResponse?.length || 0);
-
+  console.log("\n📚 Compiling Results");
+  
   if (!state.medILlamaResponse?.length || !state.webSearchResponse?.length) {
-    console.log("⏳ Waiting for responses to complete...");
     return state;
   }
 
-  console.log("✅ All responses received, proceeding with compilation...");
-
   try {
     const chain = compileAgentPrompt.pipe(llm);
-    
-    // Format the responses
     const medILlamaText = state.medILlamaResponse
       .map(r => `Query: ${r.metadata?.task || 'Unknown'}\nResponse: ${r.content}`)
       .join('\n\n');
-
     const webSearchText = JSON.stringify(state.webSearchResponse);
-
+    
     const response = await chain.invoke({
       userQuery: state.userQuery,
       medILlamaResponse: medILlamaText,
@@ -37,15 +29,14 @@ export async function compileAgent(state: StateType) {
       ragResponse: ""
     });
 
-    console.log("Compilation completed successfully");
-
+    console.log("✨ Compilation Complete");
     return {
       ...state,
       finalResponse: response.content.toString()
     };
-
-  } catch (error) {
-    console.error("Error in compileAgent:", error);
-    throw new Error(`Compilation failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("❌ Compilation failed:", error.message);
+    throw error;
   }
 }

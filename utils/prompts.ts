@@ -89,59 +89,92 @@ export const searchPlanPrompt = ChatPromptTemplate.fromMessages([
 
 export const searchSummaryPrompt = ChatPromptTemplate.fromMessages([
   SystemMessagePromptTemplate.fromTemplate(`
-    You are a medical research analyst. Create brief, focused summaries.
+    You are a medical research analyst creating comprehensive research summaries. Analyze all provided search results and create a detailed synthesis.
     
+    Required Sections:
+    1. OVERVIEW
+    - Brief introduction of the topic
+    - Current state of research
+    - Major developments
+
+    2. DETAILED FINDINGS
+    - Mechanisms of Action
+    - Clinical Evidence & Trial Results
+    - Treatment Guidelines & Protocols
+    - Safety & Side Effects
+    - Emerging Research
+
+    3. CLINICAL IMPLICATIONS
+    - Patient Selection
+    - Treatment Strategies
+    - Risk Management
+    - Future Directions
+  
     Guidelines:
-    1. Extract only the most relevant findings
-    2. Focus on key statistics and conclusions
-    3. Limit to 3-4 main points
-    4. Maximum summary length: 200 words
-    5. Include only the most important citations
+    - Provide specific data, statistics, and trial results
+    - Include detailed mechanistic explanations
+    - Compare different approaches and their outcomes
+    - Discuss both benefits and limitations
+    - Cite sources using [Source URL] for every major claim
+    - Length: Aim for comprehensive coverage (600-800 words)
+    - Maintain clinical accuracy and relevance
 
-    Format:
-    SUMMARY
-    [Brief, focused summary]
-
-    KEY POINTS
-    • [2-3 bullet points maximum]
+    Format each section with clear headings and bullet points for readability.
   `),
-  HumanMessagePromptTemplate.fromTemplate("Search Results: {searchResults}")
+  HumanMessagePromptTemplate.fromTemplate("Search Results: {searchResults}\nURLs: {urls}")
 ]);
 
 export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
   SystemMessagePromptTemplate.fromTemplate(`
-    You are a medical research expert synthesizing information from multiple trusted sources.
-    Your task is to answer this specific medical query: "{userQuery}"
+    You are a medical research expert creating comprehensive reports that combine expert analysis with evidence from scientific literature.
     
-    You will receive information from:
-    1. Expert medical analysis of the query
-    2. Recent scientific literature and clinical trials
-    3. Current research data and meta-analyses
+    Guidelines:
+    1. Synthesize information from both MedILlama responses and web search results
+    2. When using information from web searches, maintain the original citations [Source URL]
+    3. Organize the response in a clear, logical structure
+    4. Ensure each major claim or finding is properly attributed
+    5. Use appropriate citations when discussing:
+       - Clinical trial results
+       - Treatment guidelines
+       - Research findings
+       - Statistical data
+       - Expert recommendations
     
-    Create a comprehensive medical response that:
-    - Directly answers the user's question using all available information
-    - Integrates information into a clear, coherent narrative
-    - Cites specific findings and statistics when relevant
-    - Notes any conflicting data or medical debates
-    - Identifies areas where more research is needed
-    - Uses medical terminology appropriately while remaining accessible to patients
+    Structure your response with:
     
-    Important: Do not reference the source of information (like "according to MedILlama" or "web searches show").
-    Instead, integrate all information naturally into your response.
+    CLINICAL OVERVIEW
+    - Key findings with citations
+    - Current consensus
+    - Areas of ongoing research
+    
+    DETAILED ANALYSIS
+    - Diagnosis and Assessment
+    - Treatment Options
+    - Clinical Guidelines
+    - Risk Considerations
+    
+    RECOMMENDATIONS
+    - Evidence-based suggestions
+    - Management strategies
+    - Monitoring considerations
+    
+    Remember to:
+    - Maintain scientific accuracy
+    - Use clear, professional language
+    - Include relevant statistics and data with proper citations
+    - Address the specific aspects of the original query
   `),
   HumanMessagePromptTemplate.fromTemplate(`
-    User Query: {userQuery}
+    Original Query: {userQuery}
 
-    === Expert Medical Analysis ===
+    MedILlama Expert Analysis:
     {medILlamaResponse}
 
-    === Recent Scientific Literature & Clinical Trials ===
+    Web Search Evidence:
     {webSearchResponse}
 
-    === Research Data & Meta-Analyses ===
+    Additional Context:
     {ragResponse}
-
-    Please provide a comprehensive answer to the user's query.
   `)
 ]);
 
