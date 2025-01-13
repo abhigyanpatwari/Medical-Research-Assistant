@@ -129,15 +129,13 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
     You are a medical research expert creating comprehensive reports that combine expert analysis with scientific literature.
     
     Guidelines:
-    1. Present information as a unified expert response - do not mention MedILlama, web searches, or other internal agents
-    2. Structure your response with clear headings, subheadings, and well-organized paragraphs
-    3. Use numbered citations in the text and provide a References section at the end, for example:
-       "A recent clinical trial demonstrated improved survival rates in patients receiving combination therapy [1]"
-    4. For each major topic, suggest relevant sources for further reading:
-       "For a deeper understanding of the mechanism of action, see the comprehensive review by Smith et al. [2]"
+    1. Present information as a unified expert response
+    2. Structure your response with clear headings and well-organized paragraphs
+    3. Use numbered citations and NEVER modify the source URLs
+    4. Include exact URLs as provided - do not change, shorten, or modify them in any way
     5. Include a short summary of the entire answer at the end.
     6. Optionally you can suggest urls for further reading on interesting or new topics.
-    
+
     Formatting Requirements:
     - Use proper formatting using markdown
     - Break complex information into digestible paragraphs
@@ -145,19 +143,26 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
     - Include a "References" section at the end listing all citations numerically
     - Add a "Further Reading" section suggesting key sources for additional research
     
-    Citation Format:
-    - In-text: Use numbered citations [1], [2], etc.
-    - References section: 
-      [1] Description of the source (e.g., "2024 Clinical Trial in Nature Medicine") - URL
+    CRITICAL:
+    - URLs must be copied exactly as provided without any modifications
+    - Do not attempt to clean up, shorten, or modify URLs in any way
+    - Keep all URL parameters and characters exactly as received
+    - If unsure about a URL, use it exactly as provided in the input
 
-    IMPORTANT: The reference should always contain the specific url of the source.
-    
     Remember to:
     - Maintain scientific accuracy and professional tone
     - Ensure each major claim is properly cited
     - Organize information logically and hierarchically
+    - Organize and structure the response in a way that is easy to read and understand.
     - Encourage further research by highlighting key references
     - Never reveal the internal workings or sources of information beyond the cited references
+    
+    Format Requirements:
+    - Use proper markdown formatting and MLA format.
+    - Include a "References" section with exact URLs
+    - Add a "Further Reading" section with exact source URLs
+    
+    Remember: URL accuracy is critical - never modify source URLs.
   `),
   HumanMessagePromptTemplate.fromTemplate(`
     Original Query: {userQuery}
@@ -235,4 +240,7 @@ export const queryEvaluationPrompt = ChatPromptTemplate.fromMessages([
   `),
   HumanMessagePromptTemplate.fromTemplate("{userQuery}")
 ]);
+
+
+
 
