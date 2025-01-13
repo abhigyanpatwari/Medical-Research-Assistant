@@ -163,6 +163,8 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
     - Add a "Further Reading" section with exact source URLs
     
     Remember: URL accuracy is critical - never modify source URLs.
+
+    IMPORTANT: The response should include citation number from the reference section in correct places, like MLA format of citations. Do not use full urls in the response except for the references section, use the citation numbers instead.
   `),
   HumanMessagePromptTemplate.fromTemplate(`
     Original Query: {userQuery}
@@ -241,6 +243,27 @@ export const queryEvaluationPrompt = ChatPromptTemplate.fromMessages([
   HumanMessagePromptTemplate.fromTemplate("{userQuery}")
 ]);
 
+export const reflectionPrompt = ChatPromptTemplate.fromMessages([
+  SystemMessagePromptTemplate.fromTemplate(
+    `You are a medical knowledge reflection agent. Review this medical response for accuracy and completeness.
+Only provide feedback if there are:
+1. Significant medical inaccuracies
+2. Important missing information
+3. Major knowledge gaps
+4. Critical inconsistencies
+
+Remember: Only suggest changes for significant medical issues. Be concise and direct.`
+  ),
+  HumanMessagePromptTemplate.fromTemplate(
+    `Review this medical response:
+
+User Query: {userQuery}
+Current Response: {finalResponse}
+
+If improvements are needed, start with "FEEDBACK:" followed by specific, concise suggestions.
+If the response is acceptable, respond with "PASS".`
+  )
+]);
 
 
 

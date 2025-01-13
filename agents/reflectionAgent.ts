@@ -1,28 +1,11 @@
 import { Ollama } from "npm:@langchain/ollama";
 import { StateType } from "../schemas/stateSchema.ts";
-import { PromptTemplate } from "npm:@langchain/core/prompts";
+import { reflectionPrompt } from "../utils/prompts.ts";
 
 const llm = new Ollama({
   model: Deno.env.get("OLLAMA_MODEL") as string,
   baseUrl: Deno.env.get("OLLAMA_BASE_URL") as string,
 });
-
-const reflectionPrompt = PromptTemplate.fromTemplate(`
-You are a medical knowledge reflection agent. Review this medical response for accuracy and completeness.
-Only provide feedback if there are:
-1. Significant medical inaccuracies
-2. Important missing information
-3. Major knowledge gaps
-4. Critical inconsistencies
-
-User Query: {userQuery}
-Current Response: {finalResponse}
-
-If improvements are needed, start with "FEEDBACK:" followed by specific, concise suggestions.
-If the response is acceptable, respond with "PASS".
-
-Remember: Only suggest changes for significant medical issues. Be concise and direct.
-`);
 
 export async function reflectionAgent(state: StateType) {
   if (!state.finalResponse) {
