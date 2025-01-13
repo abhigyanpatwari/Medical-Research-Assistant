@@ -18,16 +18,26 @@ async function runMedicalQuery() {
     tasks: {},
     medILlamaResponse: [],
     webSearchResponse: [],
-    finalResponse: ""
+    finalResponse: "",
+    iterationCount: 0,
+    qualityPassed: false,
+    reflectionFeedback: null
   };
 
+  // const config = {
+  //   channels: {
+  //     configurables: {
+  //       thread_id: "stream_events"
+  //     }
+  //   }
+  // };
+
   const config = {
-    channels: {
-      configurables: {
-        thread_id: "stream_events"
-      }
-    }
-  };
+    configurables: {
+      thread_id: "stream_events"
+    },
+    streamMode: "updates" as const
+  }
 
   try {
     // console.log("\nProcessing your query...");

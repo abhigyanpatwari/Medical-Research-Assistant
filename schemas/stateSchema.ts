@@ -25,5 +25,8 @@ export interface StateType {
   finalResponse: string;
   tasks?: any;
   isSimpleQuery: boolean;
+  iterationCount?: number;
+  reflectionFeedback?: string | null;
+  qualityPassed?: boolean;
 } 
 
