@@ -164,7 +164,7 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
     
     Remember: URL accuracy is critical - never modify source URLs.
 
-    IMPORTANT: The response should include citation number from the reference section in correct places, like MLA format of citations. Do not use full urls in the response except for the references section, use the citation numbers instead.
+    IMPORTANT: The response should include citation number from the reference section in correct places, like MLA format of citations. Do not use full urls in the response except for the references section, use the citation numbers instead. The referenced url should be present beside the citation number in parenthesis so that it can be used to get the full url for markdown.
   `),
   HumanMessagePromptTemplate.fromTemplate(`
     Original Query: {userQuery}
@@ -264,6 +264,5 @@ If improvements are needed, start with "FEEDBACK:" followed by specific, concise
 If the response is acceptable, respond with "PASS".`
   )
 ]);
-
 
 
