@@ -6,6 +6,7 @@ import { compileAgent } from "./agents/compileAgent.ts";
 import { orchestrateQuery } from "./agents/orchestrationAgent.ts";
 import { StateAnnotation } from "./utils/state.ts";
 import { evaluationAgent } from "./agents/evaluationAgent.ts";
+import { reflectionAgent } from "./agents/reflectionAgent.ts";
 
 export function createAgentGraph() {
   const workflow = new StateGraph<StateType>({
@@ -17,7 +18,8 @@ export function createAgentGraph() {
     .addNode("orchestrate", orchestrateQuery)
     .addNode("medILlama", medILlamaAgent)
     .addNode("web_search", webSearchAgent)
-    .addNode("compile", compileAgent);
+    .addNode("compile", compileAgent)
+    .addNode("reflect", reflectionAgent);
 
   // Define the flow
   graph
@@ -34,7 +36,8 @@ export function createAgentGraph() {
     )
     .addEdge("medILlama", "compile")
     .addEdge("web_search", "compile")
-    .addEdge("compile", "__end__");
+    .addEdge("compile", "reflect")
+    .addEdge("reflect", "__end__");
 
   return workflow.compile();
 }

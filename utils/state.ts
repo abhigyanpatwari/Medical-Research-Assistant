@@ -29,4 +29,12 @@ export const StateAnnotation = {
     value: (_old: boolean, update: boolean) => update,
     default: () => false,
   },
+  qualityPassed: {
+    value: (_old: boolean | undefined, update: boolean) => update,
+    default: () => false,
+  },
+  reflectionFeedback: {
+    value: (_old: string | null | undefined, update: string | null) => update,
+    default: () => null,
+  }
 };

@@ -24,7 +24,7 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
 
     IMPORTANT: You may generate multiple tasks for the same agent if the information needed is related to the same field.
 
-    IMPORTANT: The tasks assigned to each agent should be really detailed and specific. Also the tasks should be in tone of instructions to the agents.
+    IMPORTANT: The tasks assigned to each agent should be really detailed and specific. Also the tasks should be in tone of instructions to the agents not direct questions.
     `
   ),
   HumanMessagePromptTemplate.fromTemplate("{userQuery}"),

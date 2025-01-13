@@ -5,7 +5,6 @@ import { PromptTemplate } from "npm:@langchain/core/prompts";
 const llm = new Ollama({
   model: Deno.env.get("OLLAMA_MODEL") as string,
   baseUrl: Deno.env.get("OLLAMA_BASE_URL") as string,
-  verbose: true
 });
 
 const reflectionPrompt = PromptTemplate.fromTemplate(`
