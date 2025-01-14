@@ -1,4 +1,5 @@
 import { BaseMessage } from "npm:@langchain/core/messages";
+import { RequiredAgents } from "../schemas/stateSchema.ts";
 
 export const StateAnnotation = {
   messages: {
@@ -36,5 +37,13 @@ export const StateAnnotation = {
   reflectionFeedback: {
     value: (_old: string | null | undefined, update: string | null) => update,
     default: () => null,
-  }
+  },
+  requiredAgents: {
+    value: (_old: RequiredAgents | undefined, update: RequiredAgents) => update,
+    default: () => ({
+      medILlama: false,
+      webSearch: false,
+      rag: false
+    }),
+  },
 };

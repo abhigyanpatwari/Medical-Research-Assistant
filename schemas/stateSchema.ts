@@ -14,8 +14,19 @@ export const StateSchema = z.object({
   tasks: z.any(),
   medILlamaResponse: z.array(AgentResponse),
   webSearchResponse: z.array(AgentResponse),
-  finalResponse: z.string()
+  finalResponse: z.string(),
+  requiredAgents: z.object({
+    medILlama: z.boolean(),
+    webSearch: z.boolean(),
+    rag: z.boolean()
+  }).optional()
 });
+
+export interface RequiredAgents {
+  medILlama: boolean;
+  webSearch: boolean;
+  rag: boolean;
+}
 
 export interface StateType {
   messages: BaseMessage[];
@@ -28,5 +39,6 @@ export interface StateType {
   iterationCount?: number;
   reflectionFeedback?: string | null;
   qualityPassed?: boolean;
+  requiredAgents?: RequiredAgents;
 } 
 

@@ -61,13 +61,22 @@ export async function orchestrateQuery(state: StateType) {
   // tasks.tasks.RAG?.forEach((task, index) => {
   //   console.log(`  ${index + 1}. ${task.query}`);
   // });
+  const decomposition = await chain.invoke({ userQuery });
+  
+  // Filter out agents with no tasks
+  const requiredAgents = {
+    medILlama: (decomposition.tasks.MedILlama || []).length > 0,
+    webSearch: (decomposition.tasks.Web || []).length > 0,
+    rag: (decomposition.tasks.RAG || []).length > 0,
+  };
 
   return { 
     ...state, 
+    requiredAgents,
     tasks: {
-      MedILlama: tasks.tasks.MedILlama || [],
-      WebSearch: tasks.tasks.Web || [],
-      RAG: tasks.tasks.RAG || []
+      MedILlama: decomposition.tasks.MedILlama || [],
+      WebSearch: decomposition.tasks.Web || [],
+      RAG: decomposition.tasks.RAG || []
     }
   };
 }

@@ -8,6 +8,7 @@ import { StateAnnotation } from "./utils/state.ts";
 import { evaluationAgent } from "./agents/evaluationAgent.ts";
 import { reflectionAgent } from "./agents/reflectionAgent.ts";
 
+
 export function createAgentGraph() {
   const workflow = new StateGraph<StateType>({
     channels: StateAnnotation
@@ -31,11 +32,16 @@ export function createAgentGraph() {
     )
     .addConditionalEdges(
       "orchestrate",
-      () => ["medILlama", "web_search"],
+      (state) => {
+        const nextNodes = [];
+        const agents = state.requiredAgents ?? { medILlama: false, webSearch: false, rag: false };
+        if (agents.medILlama) nextNodes.push("medILlama");
+        if (agents.webSearch) nextNodes.push("web_search");
+        return nextNodes;
+      },
       ["medILlama", "web_search"]
     )
-    .addEdge("medILlama", "compile")
-    .addEdge("web_search", "compile")
+    .addEdge(["medILlama", "web_search"] as any, "compile")
     .addEdge("compile", "reflect")
     .addEdge("reflect", "__end__");
 

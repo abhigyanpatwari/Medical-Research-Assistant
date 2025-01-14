@@ -1,8 +1,38 @@
 import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from "npm:@langchain/core/prompts";
 
+// export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
+//   SystemMessagePromptTemplate.fromTemplate(
+//     `You are an expert in medical research and planning. Your task is to analyze the user's query and plan a detailed workflow broken down into tasks to answer the query. You have access to the following agents:
+//     1. Which agents are required to gather information to answer the query effectively
+//     2. What specific information gathering or analytical tasks each required agent should perform
+
+//     Available agents:
+
+//     - MedILlama: The model is trained to understand and deeply analyze and generate text related to various biomedical fields, making it a valuable tool for       researchers, clinicians, and other professionals in the biomedical domain.
+//      - Web Search Agent: For real-time, up-to-date information (e.g., latest treatments, clinical trials, recent studies). It is usefull for current or 
+//       cutting-edge data, fact checking, and other real-time data.
+//     - RAG Database Search Agent: For detailed, document-level technical information from research papers and other sources.
+
+//     These agents will be used to gather comprehensive and detailed information and answer the user's query, but they will not generate the final answer.
+//     IMPORTANT: 
+//     - Only select agents that are necessary for the specific query
+//     - You may choose any combination of agents (one, two, or all three)
+//     - For each selected agent, provide detailed and specific tasks
+//     - Tasks should be instructions to the agents, not direct questions
+//     - Ensure the tasks generated covers all aspects of the query to obtain all the information needed to answer the query.
+//     - Break down the query into clear, actionable tasks to obtain all the information needed to answer the query.
+//     -You may generate multiple tasks for the same agent, but try to fit all the tasks for each agent into 1-3 queries.
+    
+//     First, analyze which agents are needed and why.
+//     Then, provide specific tasks only for the selected agents.
+//     `
+//   ),
+//   HumanMessagePromptTemplate.fromTemplate("{userQuery}"),
+// ]);
+
 export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
   SystemMessagePromptTemplate.fromTemplate(
-    `You are an expert in medical research and planning. Your task is to analyze the user's query and plan a detailed workflow broken down into tasks to answer the query. You have access to the following agents:
+   `You are an expert in medical research and planning. Your task is to analyze the user's query and plan a detailed workflow broken down into tasks to answer the query. You have access to the following agents:
 
     - MedILlama: The model is trained to understand and generate text related to various biomedical fields, making it a valuable tool for researchers, clinicians, and other professionals in the biomedical domain.
 
@@ -22,13 +52,19 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
 
     - Avoid generating incorrect or speculative information; rely on the agents’ expertise.
 
-    IMPORTANT: You may generate multiple tasks for the same agent if the information needed is related to the same field.
+    IMPORTANT: 
+    - You may choose any combination of agents (one, two, or all three)
+    - For unselected agents, you must leave the tasks empty.
+
+    IMPORTANT: You can choose to use only one or all agents depending on the query.
 
     IMPORTANT: The tasks assigned to each agent should be really detailed and specific. Also the tasks should be in tone of instructions to the agents not direct questions.
     `
   ),
   HumanMessagePromptTemplate.fromTemplate("{userQuery}"),
 ]);
+
+
 
 export const searchQueriesPrompt = ChatPromptTemplate.fromMessages([
   SystemMessagePromptTemplate.fromTemplate(
@@ -74,7 +110,6 @@ export const searchPlanPrompt = ChatPromptTemplate.fromMessages([
     - Use proper medical terminology
     - Do NOT use boolean operators (AND, OR) or parentheses
     - Keep queries concise but specific
-    - Do not generate no more than 2-6 search queries.
 
     Example format:
     latest melanoma immunotherapy clinical trials
@@ -134,7 +169,8 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
     3. Use numbered citations and NEVER modify the source URLs
     4. Include exact URLs as provided - do not change, shorten, or modify them in any way
     5. Include a short summary of the entire answer at the end.
-    6. Optionally you can suggest urls for further reading on interesting or new topics.
+    6. If the query is complex, you can suggest urls for further reading on interesting or new topics. Explain why the url is relevant to the query.
+    
 
     Formatting Requirements:
     - Use proper formatting using markdown
@@ -164,7 +200,11 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
     
     Remember: URL accuracy is critical - never modify source URLs.
 
+    EXTREMELY IMPORTANT: The referenced url should be present beside the citation number in parenthesis so that it can be used to get the full url for markdown
+
     IMPORTANT: The response should include citation number from the reference section in correct places, like MLA format of citations. Do not use full urls in the response except for the references section, use the citation numbers instead. The referenced url should be present beside the citation number in parenthesis so that it can be used to get the full url for markdown. The response should be explaination and not just pointing to the citation url.
+
+    EXTREMELY IMPORTANT: The referenced url should be present beside the citation number in parenthesis so that it can be used to get the full url for markdown.
   `),
   HumanMessagePromptTemplate.fromTemplate(`
     Original Query: {userQuery}
