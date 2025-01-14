@@ -13,6 +13,12 @@ const llm = new ChatGroq({
 
 
 export async function orchestrateQuery(state: StateType) {
+  // Check for reflection feedback first
+  if (state.reflectionFeedback && !state.qualityPassed) {
+    console.log("\n⚠️ Quality check failed. Reflection feedback:", state.reflectionFeedback);
+    // TODO: In the future, this feedback can be used to improve the response
+  }
+
   const { userQuery } = state;
   
   // First evaluate query complexity

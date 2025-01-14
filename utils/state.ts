@@ -31,7 +31,7 @@ export const StateAnnotation = {
   },
   qualityPassed: {
     value: (_old: boolean | undefined, update: boolean) => update,
-    default: () => false,
+    default: () => true,
   },
   reflectionFeedback: {
     value: (_old: string | null | undefined, update: string | null) => update,

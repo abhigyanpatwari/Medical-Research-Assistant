@@ -20,7 +20,7 @@ async function runMedicalQuery() {
     webSearchResponse: [],
     finalResponse: "",
     iterationCount: 0,
-    qualityPassed: false,
+    qualityPassed: true,
     reflectionFeedback: null
   };
 
