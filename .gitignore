@@ -40,3 +40,6 @@ logs/
 
 # Windows files
 Thumbs.db
+
+# Repomix files
+repomix-output.txt

@@ -46,4 +46,8 @@ export const StateAnnotation = {
       rag: false
     }),
   },
+  iterationCount: {
+    value: (_old: number | undefined, update: number) => update,
+    default: () => 0,
+  },
 };

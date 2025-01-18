@@ -48,7 +48,19 @@ export function createAgentGraph() {
       "reflect",
       (state: StateType) => {
         const iterationCount = state.iterationCount ?? 0;
-        return (!state.qualityPassed && iterationCount < 1) ? ["orchestrate"] : ["__end__"];
+        console.log(`\n🔄 Iteration ${iterationCount} completed`);
+        
+        if (!state.qualityPassed && iterationCount < 1) {
+          console.log(`⚠️ Quality check failed. Starting iteration ${iterationCount + 1}...`);
+          return ["orchestrate"];
+        } else {
+          if (!state.qualityPassed) {
+            console.log("⚠️ Max iterations reached. Ending workflow.");
+          } else {
+            console.log("✅ Quality check passed. Ending workflow.");
+          }
+          return ["__end__"];
+        }
       },
       {
         "orchestrate": "orchestrate",

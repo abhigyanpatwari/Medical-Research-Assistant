@@ -1,15 +1,12 @@
-import { ChatGroq } from "npm:@langchain/groq";
 import { DecompositionSchema } from "../schemas/decompositionSchema.ts";
 import { taskDecompositionPrompt, queryEvaluationPrompt } from "../utils/prompts.ts";
 import { StateType } from "../schemas/stateSchema.ts";
+import { LLM } from "../config.ts";
 
 
 
-const llm = new ChatGroq({
-  apiKey: Deno.env.get("GROQ_API_KEY") as string,
-  model: "llama-3.3-70b-versatile",
-  maxRetries: 3,
-});
+
+const model = LLM;
 
 
 export async function orchestrateQuery(state: StateType) {
@@ -23,7 +20,7 @@ export async function orchestrateQuery(state: StateType) {
   
   // First evaluate query complexity
   // console.log("🤔 Evaluating query complexity...");
-  const evaluationChain = queryEvaluationPrompt.pipe(llm);
+  const evaluationChain = queryEvaluationPrompt.pipe(model);
   const evaluation = await evaluationChain.invoke({ userQuery });
   const response = evaluation.content.toString();
 
@@ -40,10 +37,9 @@ export async function orchestrateQuery(state: StateType) {
   // For complex queries, proceed with task decomposition
   // console.log("🔄 Complex query detected, initiating full workflow...");
   const chain = taskDecompositionPrompt.pipe(
-    llm.withStructuredOutput(DecompositionSchema)
+    model.withStructuredOutput(DecompositionSchema)
   );
   
-  const tasks = await chain.invoke({ userQuery });
 
   // // Log the decomposed tasks in a formatted way
   // // console.log("\n📝 Task decomposition complete:");

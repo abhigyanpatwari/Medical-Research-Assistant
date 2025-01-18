@@ -1,11 +1,9 @@
-import { Ollama } from "npm:@langchain/ollama";
+
 import { StateType } from "../schemas/stateSchema.ts";
 import { reflectionPrompt } from "../utils/prompts.ts";
+import { FINETUNED_MODEL } from "../config.ts";
 
-const llm = new Ollama({
-  model: Deno.env.get("OLLAMA_MODEL") as string,
-  baseUrl: Deno.env.get("OLLAMA_BASE_URL") as string,
-});
+const model = FINETUNED_MODEL
 
 export async function reflectionAgent(state: StateType) {
   if (!state.finalResponse) {
@@ -13,7 +11,7 @@ export async function reflectionAgent(state: StateType) {
   }
 
   try {
-    const chain = reflectionPrompt.pipe(llm);
+    const chain = reflectionPrompt.pipe(model);
     const iterationCount = (state.iterationCount || 0) + 1;
 
     if (iterationCount > 3) {
