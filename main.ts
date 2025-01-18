@@ -51,13 +51,6 @@ async function runMedicalQuery() {
 
     for await (const event of stream) {
       console.log(event)
-      if (event.qualityPassed !== undefined) {
-        console.log("\n=== Quality Check Results ===");
-        console.log("Quality Passed:", event.qualityPassed);
-        if (!event.qualityPassed && event.reflectionFeedback) {
-          console.log("Feedback:", event.reflectionFeedback);
-        }
-      }
     }
 
   } catch (error) {

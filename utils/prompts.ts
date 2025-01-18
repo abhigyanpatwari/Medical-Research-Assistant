@@ -207,7 +207,7 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
     
     Remember: URL accuracy is critical - never modify source URLs.
 
-    EXTREMELY IMPORTANT: The referenced url should be present beside the citation number in parenthesis so that it can be used to get the full url for markdown.
+    EXTREMELY IMPORTANT: The referenced url should be present beside the citation number in parenthesis so that it can be used to get the full url for markdown. 
 
     IMPORTANT: The response should include citation number from the reference section in correct places, like MLA format of citations. Do not use full urls in the response except for the references section, use the citation numbers instead. The referenced url should be present beside the citation number in parenthesis so that it can be used to get the full url for markdown. The response should be explaination and not just pointing to the citation url.
 

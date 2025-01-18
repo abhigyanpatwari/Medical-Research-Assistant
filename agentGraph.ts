@@ -7,6 +7,7 @@ import { orchestrateQuery } from "./agents/orchestrationAgent.ts";
 import { StateAnnotation } from "./utils/state.ts";
 import { evaluationAgent } from "./agents/evaluationAgent.ts";
 import { reflectionAgent } from "./agents/reflectionAgent.ts";
+import { MAX_ITERATIONS } from "./config.ts";
 
 
 export function createAgentGraph() {
@@ -50,7 +51,7 @@ export function createAgentGraph() {
         const iterationCount = state.iterationCount ?? 0;
         console.log(`\n🔄 Iteration ${iterationCount} completed`);
         
-        if (!state.qualityPassed && iterationCount < 1) {
+        if (!state.qualityPassed && iterationCount < MAX_ITERATIONS) {
           console.log(`⚠️ Quality check failed. Starting iteration ${iterationCount + 1}...`);
           return ["orchestrate"];
         } else {

@@ -1,9 +1,39 @@
+// import { StateType } from "../schemas/stateSchema.ts";
+// import { reflectionPrompt } from "../utils/prompts.ts";
+// import { FINETUNED_MODEL } from "../config.ts";
+
+// const model = FINETUNED_MODEL;
+
+// export async function reflectionAgent(state: StateType) {
+//   if (!state.finalResponse) {
+//     return state;
+//   }
+
+//   try {
+//     const currentIterationCount = state.iterationCount || 0;
+
+//     // Test feedback - always indicates improvement needed
+//     const result = "FEEDBACK: This is a test feedback message to simulate quality check failure. The response needs improvement in accuracy and completeness.";
+    
+//     return {
+//       ...state,
+//       reflectionFeedback: result.substring(9).trim(),
+//       qualityPassed: false, // Always false to force iterations
+//       iterationCount: currentIterationCount + 1
+//     };
+
+//   } catch (err: unknown) {
+//     const error = err as Error;
+//     console.error("❌ Reflection failed:", error.message);
+//     throw error;
+//   }
+// }
 
 import { StateType } from "../schemas/stateSchema.ts";
 import { reflectionPrompt } from "../utils/prompts.ts";
 import { FINETUNED_MODEL } from "../config.ts";
 
-const model = FINETUNED_MODEL
+const model = FINETUNED_MODEL || ''
 
 export async function reflectionAgent(state: StateType) {
   if (!state.finalResponse) {
