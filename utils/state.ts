@@ -15,11 +15,11 @@ export const StateAnnotation = {
     default: () => ({}),
   },
   medILlamaResponse: {
-    value: (_old: any[], update: any[]) => [...(_old || []), ...update],
+    value: (old: any[], update: any[]) => [...(old || []), ...(update || [])],
     default: () => [],
   },
   webSearchResponse: {
-    value: (_old: any[], update: any[]) => [...(_old || []), ...update],
+    value: (old: any[], update: any[]) => [...(old || []), ...(update || [])],
     default: () => [],
   },
   finalResponse: {

@@ -27,21 +27,22 @@ export function createAgentGraph() {
     .addEdge("__start__", "evaluate")
     .addConditionalEdges(
       "evaluate",
-      (state) => state.isSimpleQuery ? ["__end__"] : ["orchestrate"],
+      (state: StateType) => state.isSimpleQuery ? ["__end__"] : ["orchestrate"],
       ["__end__", "orchestrate"]
     )
     .addConditionalEdges(
       "orchestrate",
-      (state) => {
+      (state: StateType) => {
         const nextNodes = [];
         const agents = state.requiredAgents ?? { medILlama: false, webSearch: false, rag: false };
         if (agents.medILlama) nextNodes.push("medILlama");
         if (agents.webSearch) nextNodes.push("web_search");
-        return nextNodes;
+        return nextNodes.length > 0 ? nextNodes : ["compile"];
       },
-      ["medILlama", "web_search"]
+      ["medILlama", "web_search", "compile"]
     )
-    .addEdge(["medILlama", "web_search"] as any, "compile")
+    .addEdge("medILlama", "compile")
+    .addEdge("web_search", "compile")
     .addEdge("compile", "reflect")
     .addEdge("reflect", "__end__");
 

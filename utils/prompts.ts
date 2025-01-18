@@ -40,7 +40,7 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
 
     - RAG Database Search Agent:  Excels at retrieving detailed, document-level information, such as mechanisms of action, in-depth research papers, and technical insights. It's best for complex or scientific queries.
 
-    These agents will be used to gather comprehensive and detailed information and answer the user's query, but they will not generate the final answer.
+    These agents will be used to gather comprehensive and detailed information and answer the user's query, but they will not generate the final answer. All the agents are parallely executed and the final response is the combination of all the agents responses. The agent dont have access to each other's responses.
 
     Workflow Guidelines:
 
@@ -50,13 +50,17 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
 
     - Ensure the tasks generated covers all aspects of the query to obtain all the information needed to answer the query.
 
-    - Avoid generating incorrect or speculative information; rely on the agents’ expertise.
+    - You may generate multiple tasks for the same agent, but try to fit all the tasks for each agent into 1-3 queries.
+
+    - Avoid generating incorrect or speculative information; rely on the agents' expertise.
 
     IMPORTANT: 
-    - You may choose any combination of agents (one, two, or all three)
-    - For unselected agents, you must leave the tasks empty.
-
-    IMPORTANT: You can choose to use only one or all agents depending on the query.
+    - First analyze which agents are required for this specific query
+    - You may choose any combination of agents (one, two, or all three).
+    - Only generate tasks for agents that are selected.
+    - Only select the agenst that are absolutely necessary for the query.
+    - Do not generate any tasks for agents that aren't required
+    - Each agent should only be used if it provides unique value for answering the query
 
     IMPORTANT: The tasks assigned to each agent should be really detailed and specific. Also the tasks should be in tone of instructions to the agents not direct questions.
     `
@@ -246,7 +250,7 @@ export const medILlamaPrompt = ChatPromptTemplate.fromMessages([
     1. Be direct and precise - no unnecessary elaboration
     2. Focus only on the most relevant information
     3. Keep medical terminology but explain briefly when needed
-    4. Limit response to 2-3 key points per topic
+    4. Give indepth analysis of the query
     5. Maximum response length: 250 words
 
     Remember: Your output will be combined with other sources, so stay focused and brief.

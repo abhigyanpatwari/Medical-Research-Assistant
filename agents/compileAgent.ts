@@ -11,16 +11,23 @@ const llm = new ChatGroq({
 export async function compileAgent(state: StateType) {
   // console.log("\n📚 Compiling Results");
   
-  if (!state.medILlamaResponse?.length || !state.webSearchResponse?.length) {
-    return state;
-  }
+  const { requiredAgents } = state;
+  
+  // Check if we have all required responses
+  const hasAllResponses = Object.entries(requiredAgents || {}).every(([agent, required]) => {
+    if (!required) return true;
+    return agent === 'medILlama' ? state.medILlamaResponse?.length > 0 : 
+           agent === 'webSearch' ? state.webSearchResponse?.length > 0 : true;
+  });
+
+  if (!hasAllResponses) return state;
 
   try {
     const chain = compileAgentPrompt.pipe(llm);
-    const medILlamaText = state.medILlamaResponse
+    const medILlamaText = requiredAgents?.medILlama ? state.medILlamaResponse
       .map(r => `Query: ${r.metadata?.task || 'Unknown'}\nResponse: ${r.content}`)
-      .join('\n\n');
-    const webSearchText = JSON.stringify(state.webSearchResponse);
+      .join('\n\n') : "";
+    const webSearchText = requiredAgents?.webSearch ? JSON.stringify(state.webSearchResponse) : "";
     
     const response = await chain.invoke({
       userQuery: state.userQuery,

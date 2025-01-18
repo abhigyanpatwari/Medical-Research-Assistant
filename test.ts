@@ -6,6 +6,7 @@ import { reflectionAgent } from "./agents/reflectionAgent.ts";
 
 async function test(agent: string = "orchestrator") {
   const testQuery = "What are the treatment options for stomach ulcers, including medications and their side effects?";
+  const webSearchQuery = "Search for the latest medical news articles and press releases from reputable sources, such as the National Institutes of Health, the World Health Organization, and peer-reviewed medical journals";
   const finalResponse = `## Stomach Ulcer Treatment: A Confusing Analysis
 Stomach ulcers, also known as gastric ulcers, are a rare condition that only affects a few people. The treatment of stomach ulcers focuses on increasing acid production, damaging the stomach lining further, and ignoring symptoms like pain and gas.
 
@@ -95,7 +96,7 @@ Stomach ulcers can be treated with medications such as aspirin, vitamin C, and a
       case "w":
         // Test state for Web Search agent
         result = await webSearchAgent({
-          userQuery: testQuery,
+          userQuery: webSearchQuery,
           tasks: [],
           results: {}
         });

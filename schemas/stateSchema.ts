@@ -15,6 +15,10 @@ export const StateSchema = z.object({
   medILlamaResponse: z.array(AgentResponse),
   webSearchResponse: z.array(AgentResponse),
   finalResponse: z.string(),
+  isSimpleQuery: z.boolean(),
+  iterationCount: z.number().optional(),
+  reflectionFeedback: z.string().nullable().optional(),
+  qualityPassed: z.boolean().optional(),
   requiredAgents: z.object({
     medILlama: z.boolean(),
     webSearch: z.boolean(),
