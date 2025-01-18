@@ -36,31 +36,34 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
 
     - MedILlama: The model is trained to understand and generate text related to various biomedical fields, making it a valuable tool for researchers, clinicians, and other professionals in the biomedical domain.
 
-    - Web Search Agent: For real-time, up-to-date information (e.g., latest treatments, clinical trials, recent studies). It is usefull for current or cutting-edge data, fact checking, and other real-time data.
+    - Web Search Agent: Highly recommended for most queries. Provides citations, real-time information, and up-to-date research. Essential for:
+      * Latest treatments and clinical trials
+      * Current research findings and statistics
+      * Recent medical developments
+      * Evidence-based recommendations
+      * Verifiable citations and references
+      Only skip web search if the query is extremely basic or purely definitional.
 
-    - RAG Database Search Agent:  Excels at retrieving detailed, document-level information, such as mechanisms of action, in-depth research papers, and technical insights. It's best for complex or scientific queries.
+    - RAG Database Search Agent: Excels at retrieving detailed, document-level information, such as mechanisms of action, in-depth research papers, and technical insights. It's best for complex or scientific queries.
 
     These agents will be used to gather comprehensive and detailed information and answer the user's query, but they will not generate the final answer. All the agents are parallely executed and the final response is the combination of all the agents responses. The agent dont have access to each other's responses.
 
     Workflow Guidelines:
-
     - Break down the query into clear, actionable tasks to obtain all the information needed to answer the query.
-
     - Assign tasks to the most appropriate agent(s) based on the type of information needed.
-
     - Ensure the tasks generated covers all aspects of the query to obtain all the information needed to answer the query.
-
     - You may generate multiple tasks for the same agent, but try to fit all the tasks for each agent into 1-3 queries.
-
     - Avoid generating incorrect or speculative information; rely on the agents' expertise.
 
     IMPORTANT: 
     - First analyze which agents are required for this specific query
     - You may choose any combination of agents (one, two, or all three).
     - Only generate tasks for agents that are selected.
-    - Only select the agents that are absolutely necessary for the query.
-    - Do not generate any tasks for agents that aren't required
+    - Only select the agents that are necessary for the query.
+    - Do not generate any tasks for agents that aren't required.
     - Each agent should only be used if it provides unique value for answering the query
+    - Strongly consider using Web Search Agent unless the query is extremely basic (like simple definitions) or purely theoretical
+    - The response will be more valuable with citations and current data, so prefer including Web Search when in doubt
 
     IMPORTANT: The tasks assigned to each agent should be really detailed and specific. Also the tasks should be in tone of instructions to the agents not direct questions.
     `
@@ -224,6 +227,44 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
   `)
 ]);
 
+export const compileWithoutWebPrompt = ChatPromptTemplate.fromMessages([
+  SystemMessagePromptTemplate.fromTemplate(`
+    You are a medical research expert creating comprehensive reports that combine expert analysis with scientific literature.
+    
+    Guidelines:
+    1. Present information as a unified expert response
+    2. Structure your response with clear headings and well-organized paragraphs
+    3. Include a short summary of the entire answer at the end
+    4. If the query is complex, you can suggest areas for further research
+
+    Formatting Requirements:
+    - Use proper formatting using markdown
+    - Break complex information into digestible paragraphs
+    - Use bullet points or numbered lists where appropriate
+    
+    Remember to:
+    - Maintain scientific accuracy and professional tone
+    - Organize information logically and hierarchically
+    - Organize and structure the response in a way that is easy to read and understand
+    - Never reveal the internal workings or sources of information
+    
+    Format Requirements:
+    - Use proper markdown formatting
+    - Structure content with clear headings and subheadings
+    
+    The response should be explanation-based and comprehensive, combining the expertise from different sources into a cohesive answer.
+  `),
+  HumanMessagePromptTemplate.fromTemplate(`
+    Original Query: {userQuery}
+
+    MedILlama Expert Analysis:
+    {medILlamaResponse}
+
+    Additional Context:
+    {ragResponse}
+  `)
+]);
+
 export const medILlamaPrompt = ChatPromptTemplate.fromMessages([
   SystemMessagePromptTemplate.fromTemplate(`
     You are a specialized medical AI assistant. Provide concise, focused responses.
@@ -301,11 +342,9 @@ Remember: Only suggest changes for significant medical issues. Be concise and di
   HumanMessagePromptTemplate.fromTemplate(
     `Review this medical response:
 
-User Query: {userQuery}
-Current Response: {finalResponse}
-
-If improvements are needed, start with "FEEDBACK:" followed by specific, concise suggestions.
-If the response is acceptable, respond with "PASS".`
+    User Query: {userQuery}
+    Current Response: {finalResponse}
+  `
   )
 ]);
 

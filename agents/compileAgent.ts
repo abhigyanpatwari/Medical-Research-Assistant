@@ -1,6 +1,6 @@
 import { ChatGroq } from "npm:@langchain/groq";
 import { StateType } from "../schemas/stateSchema.ts";
-import { compileAgentPrompt } from "../utils/prompts.ts";
+import { compileAgentPrompt, compileWithoutWebPrompt } from "../utils/prompts.ts";
 
 const llm = new ChatGroq({
   apiKey: Deno.env.get("GROQ_API_KEY") as string,
@@ -23,7 +23,10 @@ export async function compileAgent(state: StateType) {
   if (!hasAllResponses) return state;
 
   try {
-    const chain = compileAgentPrompt.pipe(llm);
+    // Choose prompt based on whether webSearch is required
+    const promptTemplate = requiredAgents?.webSearch ? compileAgentPrompt : compileWithoutWebPrompt;
+    const chain = promptTemplate.pipe(llm);
+
     const medILlamaText = requiredAgents?.medILlama ? state.medILlamaResponse
       .map(r => `Query: ${r.metadata?.task || 'Unknown'}\nResponse: ${r.content}`)
       .join('\n\n') : "";

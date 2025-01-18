@@ -44,7 +44,17 @@ export function createAgentGraph() {
     .addEdge("medILlama", "compile")
     .addEdge("web_search", "compile")
     .addEdge("compile", "reflect")
-    .addEdge("reflect", "__end__");
+    .addConditionalEdges(
+      "reflect",
+      (state: StateType) => {
+        const iterationCount = state.iterationCount ?? 0;
+        return (!state.qualityPassed && iterationCount < 1) ? ["orchestrate"] : ["__end__"];
+      },
+      {
+        "orchestrate": "orchestrate",
+        "__end__": "__end__"
+      }
+    );
 
   return workflow.compile();
 }
