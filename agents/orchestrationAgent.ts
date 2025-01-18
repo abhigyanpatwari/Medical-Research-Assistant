@@ -32,7 +32,8 @@ export async function orchestrateQuery(state: StateType) {
     return { 
       ...state,
       finalResponse: response.substring(7).trim(),
-      tasks: { MedILlama: [], WebSearch: [], RAG: [] }
+      tasks: { MedILlama: [], WebSearch: [], RAG: [] },
+      requiredAgents: { medILlama: false, webSearch: false, rag: false }
     };
   }
 
@@ -62,17 +63,10 @@ export async function orchestrateQuery(state: StateType) {
   //   console.log(`  ${index + 1}. ${task.query}`);
   // });
   const decomposition = await chain.invoke({ userQuery });
-  
-  // Filter out agents with no tasks
-  const requiredAgents = {
-    medILlama: (decomposition.tasks.MedILlama || []).length > 0,
-    webSearch: (decomposition.tasks.Web || []).length > 0,
-    rag: (decomposition.tasks.RAG || []).length > 0,
-  };
 
   return { 
     ...state, 
-    requiredAgents,
+    requiredAgents: decomposition.requiredAgents,
     tasks: {
       MedILlama: decomposition.tasks.MedILlama || [],
       WebSearch: decomposition.tasks.Web || [],

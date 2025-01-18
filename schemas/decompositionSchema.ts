@@ -16,4 +16,9 @@ export const TasksByTypeSchema = z.object({
 export const DecompositionSchema = z.object({
   userQuery: z.string().nonempty("User query cannot be empty").describe("The user's original query."),
   tasks: TasksByTypeSchema.describe("Tasks grouped by type."),
+  requiredAgents: z.object({
+    medILlama: z.boolean().describe("Whether MedILlama is required."),
+    webSearch: z.boolean().describe("Whether Web Search is required."),
+    rag: z.boolean().describe("Whether RAG is required."),
+  }).describe("Required agents for the query."),
 });
