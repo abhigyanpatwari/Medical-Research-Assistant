@@ -58,7 +58,7 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
     - First analyze which agents are required for this specific query
     - You may choose any combination of agents (one, two, or all three).
     - Only generate tasks for agents that are selected.
-    - Only select the agenst that are absolutely necessary for the query.
+    - Only select the agents that are absolutely necessary for the query.
     - Do not generate any tasks for agents that aren't required
     - Each agent should only be used if it provides unique value for answering the query
 
@@ -174,13 +174,12 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
     4. Include exact URLs as provided - do not change, shorten, or modify them in any way
     5. Include a short summary of the entire answer at the end.
     6. If the query is complex, you can suggest urls for further reading on interesting or new topics. Explain why the url is relevant to the query.
-    
 
     Formatting Requirements:
     - Use proper formatting using markdown
     - Break complex information into digestible paragraphs
     - Use bullet points or numbered lists where appropriate
-    - Include a "References" section at the end listing all citations numerically
+    - Include a "References" section at the end listing all citations numerically if urls are provided by the agents.
     - Add a "Further Reading" section suggesting key sources for additional research
     
     CRITICAL:
@@ -188,10 +187,11 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
     - Do not attempt to clean up, shorten, or modify URLs in any way
     - Keep all URL parameters and characters exactly as received
     - If unsure about a URL, use it exactly as provided in the input
+    - Only include References and Further Reading sections if web search provides URLs
 
     Remember to:
     - Maintain scientific accuracy and professional tone
-    - Ensure each major claim is properly cited
+    - Ensure each major claim is properly cited if webSearchResponse is not empty.
     - Organize information logically and hierarchically
     - Organize and structure the response in a way that is easy to read and understand.
     - Encourage further research by highlighting key references
@@ -204,11 +204,11 @@ export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
     
     Remember: URL accuracy is critical - never modify source URLs.
 
-    EXTREMELY IMPORTANT: The referenced url should be present beside the citation number in parenthesis so that it can be used to get the full url for markdown
+    EXTREMELY IMPORTANT: The referenced url should be present beside the citation number in parenthesis so that it can be used to get the full url for markdown.
 
     IMPORTANT: The response should include citation number from the reference section in correct places, like MLA format of citations. Do not use full urls in the response except for the references section, use the citation numbers instead. The referenced url should be present beside the citation number in parenthesis so that it can be used to get the full url for markdown. The response should be explaination and not just pointing to the citation url.
 
-    EXTREMELY IMPORTANT: The referenced url should be present beside the citation number in parenthesis so that it can be used to get the full url for markdown.
+    EXTREMELY IMPORTANT: Dont make your own urls, only use the urls provided by the agents. If no urls are provided, then dont add any urls to the response.
   `),
   HumanMessagePromptTemplate.fromTemplate(`
     Original Query: {userQuery}
