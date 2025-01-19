@@ -34,7 +34,15 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
   SystemMessagePromptTemplate.fromTemplate(
    `You are an expert in medical research and planning. Your task is to analyze the user's query and plan a detailed workflow broken down into tasks to answer the query. You have access to the following agents:
 
-    - MedILlama: The model is trained to understand and generate text related to various biomedical fields, making it a valuable tool for researchers, clinicians, and other professionals in the biomedical domain.
+    - MedILlama: Expert in both clinical assessment and medical knowledge analysis. Excels at:
+      * Clinical diagnosis and differential diagnosis
+      * Prioritizing critical/urgent medical concerns
+      * In-depth explanation of medical concepts and mechanisms
+      * Detailed analysis of diseases, conditions, and treatments
+      * Pathophysiology and disease progression
+      * Treatment approaches and considerations
+      * Patient-specific risk factors and precautions
+      Use for queries requiring clinical judgment, medical analysis, or detailed explanations.
 
     - Web Search Agent: Highly recommended for most queries. Provides citations, real-time information, and up-to-date research. Essential for:
       * Latest treatments and clinical trials
