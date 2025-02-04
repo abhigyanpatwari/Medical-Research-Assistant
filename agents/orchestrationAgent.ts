@@ -37,7 +37,7 @@ export async function orchestrateQuery(state: StateType) {
   // For complex queries, proceed with task decomposition
   // console.log("🔄 Complex query detected, initiating full workflow...");
   const chain = taskDecompositionPrompt.pipe(
-    model.withStructuredOutput(DecompositionSchema)
+    model.withStructuredOutput!(DecompositionSchema)
   );
   
 

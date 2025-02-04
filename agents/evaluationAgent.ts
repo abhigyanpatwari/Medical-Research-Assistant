@@ -1,12 +1,8 @@
-import { ChatGroq } from "npm:@langchain/groq";
 import { StateType } from "../schemas/stateSchema.ts";
 import { queryEvaluationPrompt } from "../utils/prompts.ts";
+import { LLM } from "../config.ts";
 
-const llm = new ChatGroq({
-  apiKey: Deno.env.get("GROQ_API_KEY") as string,
-  model: "llama-3.3-70b-versatile",
-  maxRetries: 3,
-});
+const llm = LLM || '';
 
 export async function evaluationAgent(state: StateType) {
   

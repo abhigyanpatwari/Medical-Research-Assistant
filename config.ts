@@ -14,5 +14,4 @@ export const FINETUNED_MODEL = new Ollama(
 export const LLM = new ChatGroq({
     apiKey: Deno.env.get("GROQ_API_KEY") as string,
     model: "llama-3.3-70b-versatile",
-    maxRetries: 3,
 });

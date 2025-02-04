@@ -2,12 +2,9 @@ import { ChatGroq } from "npm:@langchain/groq";
 import { TavilySearchResults } from "npm:@langchain/community/tools/tavily_search"
 import { searchPlanPrompt, searchSummaryPrompt } from "../utils/prompts.ts";
 import { StateType } from "../schemas/stateSchema.ts";
+import { LLM } from "../config.ts";
 
-const llm = new ChatGroq({
-  apiKey: Deno.env.get("GROQ_API_KEY") as string,
-  model: "llama-3.3-70b-versatile",
-  maxRetries: 3,
-});
+const llm = LLM || '';
 
 const tavilyTool = new TavilySearchResults({ 
   apiKey: Deno.env.get("TAVILY_API_KEY") as string,
