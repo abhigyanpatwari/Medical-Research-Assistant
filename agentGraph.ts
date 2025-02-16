@@ -6,7 +6,7 @@ import { compileAgent } from "./agents/compileAgent.ts";
 import { orchestrateQuery } from "./agents/orchestrationAgent.ts";
 import { StateAnnotation } from "./utils/state.ts";
 import { evaluationAgent } from "./agents/evaluationAgent.ts";
-import { reflectionAgent } from "./agents/reflectionAgent.ts";
+// import { reflectionAgent } from "./agents/reflectionAgent.ts";  // Reflection agent commented out
 import { MAX_ITERATIONS } from "./config.ts";
 
 
@@ -20,8 +20,8 @@ export function createAgentGraph() {
     .addNode("orchestrate", orchestrateQuery)
     .addNode("medILlama", medILlamaAgent)
     .addNode("web_search", webSearchAgent)
-    .addNode("compile", compileAgent)
-    .addNode("reflect", reflectionAgent);
+    .addNode("compile", compileAgent);
+    // .addNode("reflect", reflectionAgent);  // Reflection node removed
 
   // Define the flow
   graph
@@ -44,30 +44,31 @@ export function createAgentGraph() {
     )
     .addEdge("medILlama", "compile")
     .addEdge("web_search", "compile")
-    .addEdge("compile", "reflect")
-    .addConditionalEdges(
-      "reflect",
-      (state: StateType) => {
-        const iterationCount = state.iterationCount ?? 0;
-        console.log(`\n🔄 Iteration ${iterationCount} completed`);
-        
-        if (!state.qualityPassed && iterationCount < MAX_ITERATIONS) {
-          console.log(`⚠️ Quality check failed. Starting iteration ${iterationCount + 1}...`);
-          return ["orchestrate"];
-        } else {
-          if (!state.qualityPassed) {
-            console.log("⚠️ Max iterations reached. Ending workflow.");
-          } else {
-            console.log("✅ Quality check passed. Ending workflow.");
-          }
-          return ["__end__"];
-        }
-      },
-      {
-        "orchestrate": "orchestrate",
-        "__end__": "__end__"
-      }
-    );
+    // .addEdge("compile", "reflect")                    // Reflection step commented out
+    // .addConditionalEdges(
+    //   "reflect",
+    //   (state: StateType) => {
+    //     const iterationCount = state.iterationCount ?? 0;
+    //     console.log(`\n🔄 Iteration ${iterationCount} completed`);
+    //     
+    //     if (!state.qualityPassed && iterationCount < MAX_ITERATIONS) {
+    //       console.log(`⚠️ Quality check failed. Starting iteration ${iterationCount + 1}...`);
+    //       return ["orchestrate"];
+    //     } else {
+    //       if (!state.qualityPassed) {
+    //         console.log("⚠️ Max iterations reached. Ending workflow.");
+    //       } else {
+    //         console.log("✅ Quality check passed. Ending workflow.");
+    //       }
+    //       return ["__end__"];
+    //     }
+    //   },
+    //   {
+    //     "orchestrate": "orchestrate",
+    //     "__end__": "__end__"
+    //   }
+    // )
+    .addEdge("compile", "__end__");  // Flow now stops at the compile agent
 
   return workflow.compile();
 }

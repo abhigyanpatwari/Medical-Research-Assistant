@@ -73,7 +73,7 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
     - Strongly consider using Web Search Agent unless the query is extremely basic (like simple definitions) or purely theoretical
     - The response will be more valuable with citations and current data, so prefer including Web Search when in doubt
 
-    IMPORTANT: The tasks assigned to each agent should be really detailed and specific. Also the tasks should be in tone of instructions to the agents not direct questions.
+    IMPORTANT: Remember that the sub agents dont have access to the user query, so you must provide all the necessary information in the task for each agent. 
     `
   ),
   HumanMessagePromptTemplate.fromTemplate("{userQuery}"),

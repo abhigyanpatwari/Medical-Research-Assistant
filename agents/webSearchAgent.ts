@@ -1,4 +1,3 @@
-import { ChatGroq } from "npm:@langchain/groq";
 import { TavilySearchResults } from "npm:@langchain/community/tools/tavily_search"
 import { searchPlanPrompt, searchSummaryPrompt } from "../utils/prompts.ts";
 import { StateType } from "../schemas/stateSchema.ts";
