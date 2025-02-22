@@ -6,7 +6,7 @@ import { compileAgent } from "./agents/compileAgent.ts";
 import { orchestrateQuery } from "./agents/orchestrationAgent.ts";
 import { StateAnnotation } from "./utils/state.ts";
 import { evaluationAgent } from "./agents/evaluationAgent.ts";
-// import { reflectionAgent } from "./agents/reflectionAgent.ts";  // Reflection agent commented out
+import { reflectionAgent } from "./agents/reflectionAgent.ts";  
 import { MAX_ITERATIONS } from "./config.ts";
 
 
@@ -20,8 +20,8 @@ export function createAgentGraph() {
     .addNode("orchestrate", orchestrateQuery)
     .addNode("medILlama", medILlamaAgent)
     .addNode("web_search", webSearchAgent)
-    .addNode("compile", compileAgent);
-    // .addNode("reflect", reflectionAgent);  // Reflection node removed
+    .addNode("compile", compileAgent)
+    .addNode("reflect", reflectionAgent)
 
   // Define the flow
   graph
@@ -44,6 +44,7 @@ export function createAgentGraph() {
     )
     .addEdge("medILlama", "compile")
     .addEdge("web_search", "compile")
+    
     // .addEdge("compile", "reflect")                    // Reflection step commented out
     // .addConditionalEdges(
     //   "reflect",
@@ -68,7 +69,9 @@ export function createAgentGraph() {
     //     "__end__": "__end__"
     //   }
     // )
-    .addEdge("compile", "__end__");  // Flow now stops at the compile agent
+    .addEdge("compile", "reflect")
+    .addEdge("reflect", "__end__");
+
 
   return workflow.compile();
 }

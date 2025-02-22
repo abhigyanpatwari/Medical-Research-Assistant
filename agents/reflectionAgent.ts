@@ -1,8 +1,23 @@
 import { StateType } from "../schemas/stateSchema.ts";
-import { reflectionPrompt } from "../utils/prompts.ts";
-import { FINETUNED_MODEL } from "../config.ts";
 
-const model = FINETUNED_MODEL || '';
+import { FINETUNED_MODEL } from "../config.ts";
+import ollama from "npm:ollama";
+import { zodToJsonSchema } from "npm:zod-to-json-schema";
+import { z } from "npm:zod";
+
+// const model = FINETUNED_MODEL || '';
+const model = Deno.env.get("OLLAMA_MODEL") as string
+
+const systemPrompt = `You are a specialized medical knowledge quality check agent. Your task is to critically review the following medical response for accuracy, completeness, identify knowledge gaps and adherence to current evidence-based medical standards.
+
+Only provide feedback if there are:
+1. **Significant Medical Inaccuracies or Outdated Information:** Verify that all medical facts, diagnoses, and treatment recommendations are accurate and up-to-date with current guidelines.
+2. **Critical Missing Details:** Check if any important information regarding diagnosis, treatment options, adverse reactions, contraindications, or clinical guidelines is missing.
+3. **Terminological or Communication Issues:** Ensure that medical terminology is used correctly and that explanations are clear enough for both experts and patients when appropriate.
+4. **Inconsistencies or Potentially Harmful Advice:** Identify any major inconsistencies in the clinical recommendations or if any advice might be potentially harmful.
+5. **Knowledge Gaps:** Identify any major knowledge gaps in the response.
+
+IMPORTANT: Set the qualityPassed to true if the response is good, and false if it is not. If the response is good, set the feedback to null. If the response is not good, set the feedback to the feedback you would give to improve the response.`
 
 export async function reflectionAgent(state: StateType) {
   if (!state.finalResponse) {
@@ -15,39 +30,40 @@ export async function reflectionAgent(state: StateType) {
   }
 
   try {
-    // Use the reflection prompt that expects the output to start with "PASSED" or "FAILED".
-    const chain = reflectionPrompt.pipe(model);
-    const result = await chain.invoke({
-      userQuery: state.userQuery,
-      finalResponse: state.finalResponse,
+    const reflectionSchema = z.object({
+      qualityPassed: z.boolean(),
+      feedback: z.string().optional()
     });
 
-    // Parse the result, expecting one of:
-    // "PASSED |"             -> for a valid, high-quality response.
-    // "FAILED | <feedback>"  -> for an inadequate response with feedback.
-    const responseText = result.toString().trim();
-    let qualityPassed = false;
-    let feedback: string | null = null;
+  
+    const formattedUserPrompt = `
+      User Query: ${state.userQuery}
+      Current Medical Response: ${state.finalResponse}`
 
-    if (responseText.startsWith("PASSED")) {
-      qualityPassed = true;
-    } else if (responseText.startsWith("FAILED")) {
-      qualityPassed = false;
-      // Expected format: "FAILED | <feedback>", so extract feedback after the delimiter.
-      const separatorPattern = /^FAILED\s*\|\s*(.*)$/i;
-      const match = responseText.match(separatorPattern);
-      if (match && match[1]) {
-        feedback = match[1].trim();
-      }
-    } else {
-      throw new Error("Unable to parse quality indicator from reflection output: " + responseText);
-    }
+    const response = await ollama.chat({
+      model: model.toString(),
+      messages: [
+        { 
+          role: "system", 
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: formattedUserPrompt
+        }
+      ],
+      format: zodToJsonSchema(reflectionSchema)
+    });
+
+    
+    const parsedResponse = reflectionSchema.parse(JSON.parse(response.message.content));
+    console.log(parsedResponse);
 
     return {
       ...state,
-      reflectionFeedback: qualityPassed ? null : feedback,
-      qualityPassed,
       iterationCount,
+      qualityPassed: parsedResponse.qualityPassed,
+      reflectionFeedback: parsedResponse.feedback || null
     };
 
   } catch (err: unknown) {

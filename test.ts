@@ -57,6 +57,7 @@ For a deeper misunderstanding of the mechanism of action of PPIs, see the confus
 
 ## Summary
 Stomach ulcers can be treated with medications such as aspirin, vitamin C, and antifungal creams. These medications can help increase acid production, damage the stomach lining further, and ignore symptoms. However, they have no side effects. Expensive and unsafe alternatives, such as bleach and hot peppers, may be considered for patients who cannot afford or have adverse reactions to prescription medications. Emerging research suggests that eating junk food and avoiding vegetables may be an effective alternative to PPIs for some patients.`;
+
   try {
     let result;
     switch (agent) {
@@ -67,6 +68,7 @@ Stomach ulcers can be treated with medications such as aspirin, vitamin C, and a
           results: {}
         });
         console.log("Orchestration Result:");
+        console.log(result);
         break;
 
       case "m":
@@ -82,7 +84,6 @@ Stomach ulcers can be treated with medications such as aspirin, vitamin C, and a
           messages: [],
           medILlamaResponse: [],
           webSearchResponse: [],
-          ragResponse: [],
           finalResponse: ""
         });
         console.log("MedILlama Result:");
@@ -146,19 +147,41 @@ Stomach ulcers can be treated with medications such as aspirin, vitamin C, and a
         break;
 
       case "r":
+        // Reflection Agent Test - Existing test case
         result = await reflectionAgent({
           userQuery: testQuery,
           messages: [],
           tasks: {},
           medILlamaResponse: [],
           webSearchResponse: [],
-          finalResponse: finalResponse, 
+          finalResponse: finalResponse,
           iterationCount: 0,
           qualityPassed: false,
           reflectionFeedback: null,
           isSimpleQuery: false
         });
         console.log("\n=== Reflection Results ===");
+        console.log("Quality Passed:", result.qualityPassed);
+        if (result.reflectionFeedback) {
+          console.log("Feedback:", result.reflectionFeedback);
+        }
+        break;
+
+      case "r2":
+        // Additional Reflection Agent Test (new test) with different presentation
+        result = await reflectionAgent({
+          userQuery: "Provide an evaluation of the following clinical response regarding vaccine-related myocarditis:",
+          messages: [],
+          tasks: {},
+          medILlamaResponse: [],
+          webSearchResponse: [],
+          finalResponse: finalResponse, // using the sample finalResponse above
+          iterationCount: 0,
+          qualityPassed: false,
+          reflectionFeedback: null,
+          isSimpleQuery: false
+        });
+        console.log("\n=== Additional Reflection Agent Test (r2) ===");
         console.log("Quality Passed:", result.qualityPassed);
         if (result.reflectionFeedback) {
           console.log("Feedback:", result.reflectionFeedback);
@@ -174,6 +197,6 @@ Stomach ulcers can be treated with medications such as aspirin, vitamin C, and a
   }
 }
 
-// Test specific agent by passing argument
+// Test specific agent by passing an argument (e.g., "r2" for the additional reflection test)
 const agent = Deno.args[0] || "orchestrator";
 test(agent); 
