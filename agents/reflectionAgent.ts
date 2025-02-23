@@ -1,12 +1,12 @@
 import { StateType } from "../schemas/stateSchema.ts";
 
-import { FINETUNED_MODEL } from "../config.ts";
+
 import ollama from "npm:ollama";
 import { zodToJsonSchema } from "npm:zod-to-json-schema";
 import { z } from "npm:zod";
 
-// const model = FINETUNED_MODEL || '';
-const model = Deno.env.get("OLLAMA_MODEL") as string
+
+const model = Deno.env.get("OLLAMA_MODEL") as string //Cant use FINETUNED_MODEL import from config here because it's set in a different way for langchain and this agent uses ollama directly
 
 const systemPrompt = `You are a specialized medical knowledge quality check agent. Your task is to critically review the following medical response for accuracy, completeness, identify knowledge gaps and adherence to current evidence-based medical standards.
 
@@ -18,6 +18,15 @@ Only provide feedback if there are:
 5. **Knowledge Gaps:** Identify any major knowledge gaps in the response.
 
 IMPORTANT: Set the qualityPassed to true if the response is good, and false if it is not. If the response is good, set the feedback to null. If the response is not good, set the feedback to the feedback you would give to improve the response.`
+
+
+//System prompt to test the agent
+// const systemPrompt = `You are a specialized medical knowledge quality check agent. Your task is to critically review the following medical response for accuracy, completeness, identify knowledge gaps and adherence to current evidence-based medical standards.
+
+// Provide feedback to better the response in terms of medical accuracy, completeness, and adherence to current evidence-based medical standards. 
+
+// IMPORTANT: Set the qualityPassed to true only if the response is extremely good and perfect, and false if it is not. If the response is good, set the feedback to null. If the response is not good, set the feedback to the feedback you would give to improve the response.
+// `
 
 export async function reflectionAgent(state: StateType) {
   if (!state.finalResponse) {

@@ -1,35 +1,37 @@
-// This file creates a WebSocket endpoint for streaming LangGraph workflow events.
-// It uses Deno's built-in support for upgrading HTTP requests to WebSocket connections 
-// and streams the events from createAgentGraph().stream() to the client.
-
-import { serve } from "https://deno.land/std@0.152.0/http/server.ts";
 import { createAgentGraph } from "../agentGraph.ts";
+import type { StateType } from "../schemas/stateSchema.ts";
 
-console.log("WebSocket server listening on http://localhost:8080/");
+interface Payload {
+  userQuery: string;
+}
 
-serve(async (req: Request): Promise<Response> => {
-  // Upgrade the HTTP connection to a WebSocket connection.
+Deno.serve({ port: 8080 }, async (req: Request): Promise<Response> => {
+  // Ensure the request is for a WebSocket connection.
+  const upgradeHeader = req.headers.get("upgrade");
+  if (!upgradeHeader || upgradeHeader.toLowerCase() !== "websocket") {
+    return new Response("This endpoint only accepts WebSocket connections", { status: 400 });
+  }
+
   const { socket, response } = Deno.upgradeWebSocket(req);
 
   socket.onopen = () => {
     console.log("WebSocket connection opened");
   };
 
-  // When a message is received from the client, assume it contains a JSON
-  // payload with the userQuery to start the workflow.
-  socket.onmessage = async (e: MessageEvent<string>) => {
-    console.log("Received message:", e.data);
+  socket.onmessage = async (event: MessageEvent<string>) => {
+    const message = event.data;
+    console.log("Received message:", message);
 
-    let payload: { userQuery: string };
+    // Try to parse the incoming message as JSON. If that fails, treat it as a user query.
+    let payload: Payload;
     try {
-      payload = JSON.parse(e.data);
+      payload = JSON.parse(message);
     } catch (error) {
-      // If the parsing fails, treat the entire message as the user query.
-      payload = { userQuery: e.data };
+      payload = { userQuery: message };
     }
 
     // Build the initial state using the provided user query.
-    const initialState = {
+    const initialState: StateType = {
       messages: [],
       userQuery: payload.userQuery,
       tasks: {},
@@ -39,24 +41,20 @@ serve(async (req: Request): Promise<Response> => {
       iterationCount: 0,
       qualityPassed: true,
       reflectionFeedback: null,
-      // Initially, requiredAgents is false. The orchestrator will update it.
-      requiredAgents: { medILlama: false, webSearch: false, rag: false }
+      requiredAgents: { medILlama: false, webSearch: false, rag: false },
+      isSimpleQuery: false,
     };
 
     try {
-      // Create the workflow graph and run it in streaming mode.
       const graph = createAgentGraph();
-
-      for await (const event of graph.stream(initialState)) {
-        // Send the event to the client; each event is JSON-stringified.
+      const stream = await graph.stream(initialState);
+      for await (const event of stream) {
         socket.send(JSON.stringify(event));
       }
-      
-      // Once completed, send a final message.
       socket.send(JSON.stringify({ type: "end" }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in workflow:", error);
-      socket.send(JSON.stringify({ type: "error", error: error.message }));
+      socket.send(JSON.stringify({ type: "error", error: (error as Error).message }));
     }
   };
 
@@ -64,8 +62,8 @@ serve(async (req: Request): Promise<Response> => {
     console.log("WebSocket connection closed");
   };
 
-  socket.onerror = (err) => {
-    console.error("WebSocket error:", err);
+  socket.onerror = (error: Event) => {
+    console.error("WebSocket error:", error);
   };
 
   return response;

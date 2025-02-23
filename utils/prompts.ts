@@ -30,6 +30,7 @@ import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemp
 //   HumanMessagePromptTemplate.fromTemplate("{userQuery}"),
 // ]);
 
+// Include this after RAG is implemented:    - RAG Database Search Agent: Excels at retrieving detailed, document-level information, such as mechanisms of action, in-depth research papers, and technical insights. It's best for complex or scientific queries.
 export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
   SystemMessagePromptTemplate.fromTemplate(
    `You are an expert in medical research and planning. Your task is to analyze the user's query and plan a detailed workflow broken down into tasks to answer the query. You have access to the following agents:
@@ -52,8 +53,6 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
       * Verifiable citations and references
       Only skip web search if the query is extremely basic or purely definitional.
 
-    - RAG Database Search Agent: Excels at retrieving detailed, document-level information, such as mechanisms of action, in-depth research papers, and technical insights. It's best for complex or scientific queries.
-
     These agents will be used to gather comprehensive and detailed information and answer the user's query, but they will not generate the final answer. All the agents are parallely executed and the final response is the combination of all the agents responses. The agent dont have access to each other's responses.
 
     Workflow Guidelines:
@@ -65,7 +64,7 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
 
     IMPORTANT: 
     - First analyze which agents are required for this specific query
-    - You may choose any combination of agents (one, two, or all three).
+    - You may choose any combination of agents (one, two, or all, etc).
     - Only generate tasks for agents that are selected.
     - Only select the agents that are necessary for the query.
     - Do not generate any tasks for agents that aren't required.
@@ -77,6 +76,54 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
     `
   ),
   HumanMessagePromptTemplate.fromTemplate("{userQuery}"),
+]);
+
+export const improvementPrompt = ChatPromptTemplate.fromMessages([
+  SystemMessagePromptTemplate.fromTemplate(
+    `You are an expert in medical research and planning. Your task is to analyze the provided previous response and the improvement feedback provided by the user and plan a detailed workflow broken down into tasks to answer the query. You have access to the following agents:
+
+    - MedILlama: Expert in both clinical assessment and medical knowledge analysis. Excels at:
+      * Clinical diagnosis and differential diagnosis
+      * Prioritizing critical/urgent medical concerns
+      * In-depth explanation of medical concepts and mechanisms
+      * Detailed analysis of diseases, conditions, and treatments
+      * Pathophysiology and disease progression
+      * Treatment approaches and considerations
+      * Patient-specific risk factors and precautions
+      Use for queries requiring clinical judgment, medical analysis, or detailed explanations.
+
+    - Web Search Agent: Highly recommended for most queries. Provides citations, real-time information, and up-to-date research. Essential for:
+      * Latest treatments and clinical trials
+      * Current research findings and statistics
+      * Recent medical developments
+      * Evidence-based recommendations
+      * Verifiable citations and references
+
+    - RAG Database Search Agent: Excels at retrieving detailed, document-level information, such as mechanisms of action, in-depth research papers, and technical insights. It's best for complex or scientific queries.
+
+    These agents will be used to gather comprehensive and detailed information and answer the user's query, but they will not generate the final answer. All the agents are parallely executed and the final response is the combination of all the agents responses. The agent dont have access to each other's responses.
+
+    Workflow Guidelines:
+    - Break down the query into clear, actionable tasks to obtain all the information needed to improve the previous response as per the feedback provided by the user.
+    - Assign tasks to the most appropriate agent(s) based on the type of information needed.
+    - Ensure the tasks generated covers all aspects of the query to obtain all the information needed to improve the previous response as per the feedback provided by the user.
+    - You may generate multiple tasks for the same agent, but try to fit all the tasks for each agent into 1-3 queries.
+    - Avoid generating incorrect or speculative information; rely on the agents' expertise.
+
+     IMPORTANT: 
+    - First analyze which agents are required for this specific query
+    - You may choose any combination of agents (one, two, or all, etc).
+    - Only generate tasks for agents that are selected.
+    - Only select the agents that are necessary for the query.
+    - Do not generate any tasks for agents that aren't required.
+
+    IMPORTANT: Remember that the sub agents dont have access to the user query, so you must provide all the necessary information in the task for each agent. 
+    `
+  ),
+  HumanMessagePromptTemplate.fromTemplate(`
+    Previous Response: {previousResponse}
+    Improvement Feedback: {improvementFeedback} 
+    User Query: {userQuery}`),
 ]);
 
 
@@ -176,11 +223,11 @@ export const searchSummaryPrompt = ChatPromptTemplate.fromMessages([
 
 export const compileAgentPrompt = ChatPromptTemplate.fromMessages([
   SystemMessagePromptTemplate.fromTemplate(`
-    You are a medical research expert creating comprehensive reports that combine expert analysis with scientific literature.
+    You are a medical research expert creating very detailed and comprehensive reports that combine expert analysis with scientific literature.
     
     Guidelines:
     1. Present information as a unified expert response
-    2. Structure your response with clear headings and well-organized paragraphs
+    2. Structure your response with clear headings and well-organized paragraphs. The content within each heading should be detailed and comprehensive.
     3. Use numbered citations and NEVER modify the source URLs
     4. Include exact URLs as provided - do not change, shorten, or modify them in any way
     5. Include a short summary of the entire answer at the end.
@@ -300,7 +347,6 @@ export const medILlamaPrompt = ChatPromptTemplate.fromMessages([
     2. Focus only on the most relevant information
     3. Keep medical terminology but explain briefly when needed
     4. Give indepth analysis of the query
-    5. Maximum response length: 250 words
 
     Remember: Your output will be combined with other sources, so stay focused and brief.
   `),
@@ -336,41 +382,41 @@ export const queryEvaluationPrompt = ChatPromptTemplate.fromMessages([
   HumanMessagePromptTemplate.fromTemplate("{userQuery}")
 ]);
 
-export const reflectionPrompt = ChatPromptTemplate.fromMessages([
-  SystemMessagePromptTemplate.fromTemplate(
-    `You are a specialized medical knowledge quality check agent. Your task is to critically review the following medical response for accuracy, completeness, identify knowledge gaps and adherence to current evidence-based medical standards.
+// export const reflectionPrompt = ChatPromptTemplate.fromMessages([
+//   SystemMessagePromptTemplate.fromTemplate(
+//     `You are a specialized medical knowledge quality check agent. Your task is to critically review the following medical response for accuracy, completeness, identify knowledge gaps and adherence to current evidence-based medical standards.
 
-Only provide feedback if there are:
-1. **Significant Medical Inaccuracies or Outdated Information:** Verify that all medical facts, diagnoses, and treatment recommendations are accurate and up-to-date with current guidelines.
-2. **Critical Missing Details:** Check if any important information regarding diagnosis, treatment options, adverse reactions, contraindications, or clinical guidelines is missing.
-3. **Terminological or Communication Issues:** Ensure that medical terminology is used correctly and that explanations are clear enough for both experts and patients when appropriate.
-4. **Inconsistencies or Potentially Harmful Advice:** Identify any major inconsistencies in the clinical recommendations or if any advice might be potentially harmful.
-5. **Knowledge Gaps:** Identify any major knowledge gaps in the response.
-6. **Lack of Evidence-Based Information:** Ensure that the response is evidence-based. Check if claims are supported by up-to-date references or guidelines.
+// Only provide feedback if there are:
+// 1. **Significant Medical Inaccuracies or Outdated Information:** Verify that all medical facts, diagnoses, and treatment recommendations are accurate and up-to-date with current guidelines.
+// 2. **Critical Missing Details:** Check if any important information regarding diagnosis, treatment options, adverse reactions, contraindications, or clinical guidelines is missing.
+// 3. **Terminological or Communication Issues:** Ensure that medical terminology is used correctly and that explanations are clear enough for both experts and patients when appropriate.
+// 4. **Inconsistencies or Potentially Harmful Advice:** Identify any major inconsistencies in the clinical recommendations or if any advice might be potentially harmful.
+// 5. **Knowledge Gaps:** Identify any major knowledge gaps in the response.
+// 6. **Lack of Evidence-Based Information:** Ensure that the response is evidence-based. Check if claims are supported by up-to-date references or guidelines.
 
-Additional Guidelines:
-- Ensure that the response is evidence-based. Check if claims are supported by up-to-date references or guidelines.
-- If references are included, confirm that they are properly cited and directly support the provided information.
-- Be concise and direct in your feedback. Only suggest improvements if one or more of the above issues are present.
-- If the response is accurate and complete, provide no feedback.
+// Additional Guidelines:
+// - Ensure that the response is evidence-based. Check if claims are supported by up-to-date references or guidelines.
+// - If references are included, confirm that they are properly cited and directly support the provided information.
+// - Be concise and direct in your feedback. Only suggest improvements if one or more of the above issues are present.
+// - If the response is accurate and complete, provide no feedback.
 
-IMPORTANT: The response should always start with the key word PASSED or FAILED. If PASSED, then provide no feedback. If FAILED, then provide very conscise but detailed feedback on how to improve the response as instructions.
+// IMPORTANT: The response should always start with the key word PASSED or FAILED. If PASSED, then provide no feedback. If FAILED, then provide very conscise but detailed feedback on how to improve the response as instructions.
 
-Example Output Format:
-PASSED | 
-FAILED | <feedbackto improve the response as instructions>
+// Example Output Format:
+// PASSED | 
+// FAILED | <feedbackto improve the response as instructions>
 
-Review the following:
-User Query: {userQuery}
-Current Medical Response: {finalResponse}
-`
-  ),
-  HumanMessagePromptTemplate.fromTemplate(
-    `Review this medical response:
+// Review the following:
+// User Query: {userQuery}
+// Current Medical Response: {finalResponse}
+// `
+//   ),
+//   HumanMessagePromptTemplate.fromTemplate(
+//     `Review this medical response:
 
-  User Query: {userQuery}
-  Current Response: {finalResponse}`
-  )
-]);
+//   User Query: {userQuery}
+//   Current Response: {finalResponse}`
+//   )
+// ]);
 
 

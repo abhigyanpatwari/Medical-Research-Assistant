@@ -45,7 +45,7 @@ export function createAgentGraph() {
     .addEdge("medILlama", "compile")
     .addEdge("web_search", "compile")
     
-    // .addEdge("compile", "reflect")                    // Reflection step commented out
+    // .addEdge("compile", "reflect")                    
     // .addConditionalEdges(
     //   "reflect",
     //   (state: StateType) => {
@@ -70,8 +70,16 @@ export function createAgentGraph() {
     //   }
     // )
     .addEdge("compile", "reflect")
-    .addEdge("reflect", "__end__");
-
+    .addConditionalEdges(
+      "reflect",
+      (state: StateType) => {
+        if (state.qualityPassed || (state.iterationCount ?? 0) >= MAX_ITERATIONS) {
+          return ["__end__"];
+        }
+        return ["orchestrate"];
+      },
+      ["__end__", "orchestrate"]
+    );
 
   return workflow.compile();
 }
