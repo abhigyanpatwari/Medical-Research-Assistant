@@ -61,6 +61,7 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
     - Ensure the tasks generated covers all aspects of the query to obtain all the information needed to answer the query.
     - You may generate multiple tasks for the same agent, but try to fit all the tasks for each agent into 1-3 queries.
     - Avoid generating incorrect or speculative information; rely on the agents' expertise.
+    - Try to gather specific quantitative data such as statistics, percentages, numerical values, medical forlmulae and terms and research metrics when relevant.
 
     IMPORTANT: 
     - First analyze which agents are required for this specific query
@@ -139,7 +140,7 @@ export const searchQueriesPrompt = ChatPromptTemplate.fromMessages([
 
 export const searchPlanPrompt = ChatPromptTemplate.fromMessages([
   SystemMessagePromptTemplate.fromTemplate(
-    `You are a specialized medical search strategist. Your task is to analyze the query and generate 3-4 highly specific search queries that will yield comprehensive medical information.
+    `You are a specialized medical search strategist. Your task is to analyze the assigned search tasks and generate highly specific search queries that will yield comprehensive medical information. You may generate as many search queries as needed to cover all important aspects of the query but generate too many queries uselessly. 
 
     When planning the search queries, consider:
     1. Core Medical Information:
@@ -167,21 +168,15 @@ export const searchPlanPrompt = ChatPromptTemplate.fromMessages([
 
     IMPORTANT:
     - Generate simple, natural language search queries
-    - Generate only 3-4 search queries unless absolutely necessary to cover all aspects of the query.
     - Each query should be clear and focused on one aspect
     - Use proper medical terminology
     - Do NOT use boolean operators (AND, OR) or parentheses
     - Keep queries concise but specific
 
-    Example format:
-    latest melanoma immunotherapy clinical trials
-    melanoma immunotherapy side effects research
-    NCCN guidelines melanoma immunotherapy treatment
-
     Format your response as ONLY the search queries, one per line.
     `
   ),
-  HumanMessagePromptTemplate.fromTemplate("{userQuery}"),
+  HumanMessagePromptTemplate.fromTemplate("{webSearchTask}"),
 ]);
 
 export const searchSummaryPrompt = ChatPromptTemplate.fromMessages([
@@ -316,7 +311,7 @@ export const compileWithoutWebPrompt = ChatPromptTemplate.fromMessages([
     {medILlamaResponse}
 
     Additional Context:
-    {ragResponse}
+  {ragResponse}
   `)
 ]);
 
@@ -418,5 +413,34 @@ export const queryEvaluationPrompt = ChatPromptTemplate.fromMessages([
 //   Current Response: {finalResponse}`
 //   )
 // ]);
+
+export const compileRefinementPrompt = ChatPromptTemplate.fromMessages([
+  SystemMessagePromptTemplate.fromTemplate(`
+    You are a medical research expert tasked with refining an existing comprehensive report based on new information and user feedback.
+    
+    Your task is to:
+    - Review the previous final report.
+    - Address the specific improvement suggestions provided in the user feedback.
+    - You may use the new outputs from the MedILlama and Web Search agents to improve the response.
+    
+    Guidelines:
+    - Maintain a clear structure with updated headings and sections.
+    - Highlight the refinements made based on the feedback.
+    - Ensure the updated report is cohesive, scientifically accurate, and professionally written.
+  `),
+  HumanMessagePromptTemplate.fromTemplate(`
+    Previous Final Report:
+    {previousFinalResponse}
+
+    New MedILlama Agent Output:
+    {medILlamaResponse}
+
+    New Web Search Output:
+    {webSearchResponse}
+
+    User Feedback:
+    {reflectionFeedback}
+  `)
+]);
 
 

@@ -9,19 +9,46 @@ const llm = new Ollama({
 });
 
 export async function medILlamaAgent(state: StateType) {
-  // console.log("\n🏥 MedILlama Agent Started");
+  console.log("\n🏥 MedILlama Agent Started");
   const tasks = state.tasks.MedILlama || [];
   const responses = [];
 
   for (const task of tasks) {
-    const chain = medILlamaPrompt.pipe(llm);
-    const response: any = await chain.invoke({ query: task.query });
-    responses.push({
-      content: typeof response === 'string' ? response : response.content?.toString() || response.toString(),
-      metadata: { task: task.query }
-    });
+    try {
+      const chain = medILlamaPrompt.pipe(llm);
+      const response: any = await chain.invoke({ query: task.query });
+      
+      // Ensure the response is stored as a single string:
+      let content: string;
+      if (Array.isArray(response)) {
+        content = response.join('');
+      } else if (typeof response === "string") {
+        content = response;
+      } else {
+        content = response.content ? response.content.toString() : response.toString();
+      }
+
+      responses.push({
+        content,
+        metadata: { task: task.query }
+      });
+    } catch (error) {
+      responses.push({
+        content: "Error processing medical query. Please try again later.",
+        metadata: { task: task.query, error: error instanceof Error ? error.message : String(error) }
+      });
+    }
   }
 
-  // console.log(`🏥 MedILlama Agent Completed (${responses.length} responses)`);
-  return { ...state, medILlamaResponse: responses };
+  // Combine all responses into one string.
+  const combinedContent = responses
+    .map(r => `Query: ${r.metadata?.task}\n${r.content}`)
+    .join("\n\n---\n\n");
+
+  console.log(combinedContent);
+  
+
+  console.log(`🏥 MedILlama Agent Completed (${responses.length} responses)`);
+
+  return { ...state, medILlamaResponse: combinedContent };
 }

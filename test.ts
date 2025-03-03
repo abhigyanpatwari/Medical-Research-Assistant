@@ -99,7 +99,8 @@ Stomach ulcers can be treated with medications such as aspirin, vitamin C, and a
         result = await webSearchAgent({
           userQuery: webSearchQuery,
           tasks: [],
-          results: {}
+          results: {},
+          webSearchTask: webSearchQuery
         });
         console.log("\n=== Web Search Results ===");
         console.log("\nSearch Queries Generated:");

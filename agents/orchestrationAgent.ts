@@ -7,9 +7,17 @@ import { MAX_ITERATIONS } from "../config.ts";
 const model = LLM;
 
 export async function orchestrateQuery(state: StateType) {
-  // Check for reflection feedback first. Invokes the improvement prompt if the quality check failed.
+  // Reset accumulated responses for a new iteration!
+  // This clears responses from previous iterations so that only the current cycle's results are used.
+  state.medILlamaResponse = [];
+  state.webSearchResponse = [];
+
+  // Check for reflection feedback first.
+  // If quality has not passed and we're still within the maximum iteration count,
+  // then run the improvement/decomposition prompt.
   if (!state.qualityPassed && (state.iterationCount ?? 0) <= MAX_ITERATIONS) {
     console.log(`\n\n\n\n⚠️ Quality check failed. Reflection feedback: ${state.reflectionFeedback} \n\n\n\n`);
+    
     const improvementDecompositionChain = improvementPrompt.pipe(
       model.withStructuredOutput!(DecompositionSchema)
     );
@@ -26,12 +34,11 @@ export async function orchestrateQuery(state: StateType) {
       tasks: {
         MedILlama: improvedDecomposition.tasks.MedILlama || [],
         WebSearch: improvedDecomposition.tasks.Web || [],
-        // RAG: decomposition.tasks.RAG || []
+        // RAG: improvedDecomposition.tasks.RAG || []
       }
     };
   }
 
-   
   const initialDecompositionChain = taskDecompositionPrompt.pipe(
     model.withStructuredOutput!(DecompositionSchema)
   );
@@ -46,7 +53,7 @@ export async function orchestrateQuery(state: StateType) {
     tasks: {
       MedILlama: initialDecomposition.tasks.MedILlama || [],
       WebSearch: initialDecomposition.tasks.Web || [],
-      // RAG: decomposition.tasks.RAG || []
+      // RAG: initialDecomposition.tasks.RAG || []
     }
   };
 }

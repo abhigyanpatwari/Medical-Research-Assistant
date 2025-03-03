@@ -25,8 +25,9 @@ IMPORTANT: Set the qualityPassed to true if the response is good, and false if i
 
 // Provide feedback to better the response in terms of medical accuracy, completeness, and adherence to current evidence-based medical standards. 
 
-// IMPORTANT: Set the qualityPassed to true only if the response is extremely good and perfect, and false if it is not. If the response is good, set the feedback to null. If the response is not good, set the feedback to the feedback you would give to improve the response.
-// `
+// IMPORTANT: Set the qualityPassed to false and generate feedback to improve the response.
+
+// IMPORTANT: Never set the quality passed to true. Always false`
 
 export async function reflectionAgent(state: StateType) {
   if (!state.finalResponse) {
@@ -66,7 +67,7 @@ export async function reflectionAgent(state: StateType) {
 
     
     const parsedResponse = reflectionSchema.parse(JSON.parse(response.message.content));
-    console.log(parsedResponse);
+    // console.log(parsedResponse);
 
     return {
       ...state,

@@ -1,5 +1,5 @@
 import { TavilySearchResults } from "npm:@langchain/community/tools/tavily_search"
-import { searchPlanPrompt, searchSummaryPrompt } from "../utils/prompts.ts";
+import { searchSummaryPrompt } from "../utils/prompts.ts";
 import { StateType } from "../schemas/stateSchema.ts";
 import { LLM } from "../config.ts";
 
@@ -11,29 +11,33 @@ const tavilyTool = new TavilySearchResults({
 });
 
 export async function webSearchAgent(state: StateType) {
-  // console.log("\n🔎 Web Search Agent Started");
-  const { userQuery } = state;
-
-  const planChain = searchPlanPrompt.pipe(llm);
-  const searchPlan = await planChain.invoke({ userQuery });
-  const searchQueries = searchPlan.content.toString().split('\n').filter(q => q.trim());
+  console.log("\n🔎 Web Search Agent Started");
   
-  // console.log("\n📋 Generated Search Queries:");
-  // searchQueries.forEach((q, i) => console.log(`   ${i + 1}. ${q}`));
+  // Get the web search tasks array
+  const webSearchTasks = state.tasks.WebSearch || [];
+  
+  // Log the tasks for debugging
+  console.log("\n🔍 Web Search Tasks:");
+  console.log("Raw tasks:", JSON.stringify(webSearchTasks));
+  
+  // If no tasks, fallback to user query
+  if (webSearchTasks.length === 0 && state.userQuery) {
+    webSearchTasks.push({ query: state.userQuery });
+  }
   
   let allResults = [];
   
-  // First collect all results
-  for (const query of searchQueries) {
+  // Process each task directly with Tavily
+  for (const task of webSearchTasks) {
+    const query = typeof task === 'string' ? task : task.query;
+    console.log(`\n🔎 Searching for: "${query}"`);
+    
     try {
       const rawResults = await tavilyTool.invoke(query);
       const results = typeof rawResults === 'string' ? JSON.parse(rawResults) : rawResults;
-
-      // if (!Array.isArray(results)) {
-      //   console.error("❌ Unexpected response format from Tavily");
-      //   continue;
-      // }
-
+      
+      console.log(`✓ Found ${results.length} results for query: "${query}"`);
+      
       allResults.push({
         query,
         results: results.map((r: { url: string; title: string; content: string }) => ({
@@ -42,33 +46,35 @@ export async function webSearchAgent(state: StateType) {
           content: r.content
         }))
       });
-      
-      // console.log(`✓ Search ${allResults.length}/${searchQueries.length} completed`);
     } catch (err: unknown) {
       const error = err as Error;
-      // console.error(`❌ Error processing query: "${query}"`);
-      // console.error(`   ${error.message}`);
+      console.error(`❌ Error searching for "${query}": ${error.message}`);
     }
   }
-
+  
+  // If no results were found, return unchanged state
+  if (allResults.length === 0) {
+    console.log("❌ No search results found for any query");
+    return state;
+  }
+  
   // Prepare content for summary
   const combinedContent = allResults.map(r => 
     `Query: ${r.query}\n${r.results.map((item: { url: string; content: string }) => 
       `Source: ${item.url}\n${item.content}`
     ).join('\n\n')}`
   ).join('\n\n---\n\n');
-
-  // Check content length (rough estimate: 1 char ≈ 1 byte)
-  const estimatedTokens = combinedContent.length / 4; // rough estimate: 4 chars per token
-  const TOKEN_LIMIT = 6000; // Groq's limit from previous error
-
+  
+  const estimatedTokens = combinedContent.length / 4; 
+  const TOKEN_LIMIT = 6000; 
+  
   if (estimatedTokens > TOKEN_LIMIT) {
-    // console.log("⚠️ Content too large, falling back to individual summaries");
-    // Implement your fallback logic here
+    console.log("⚠️ Content too large, returning without summary");
     return state;
   }
-
+  
   try {
+    console.log("\n📝 Generating summary of search results...");
     const summaryChain = searchSummaryPrompt.pipe(llm);
     const batchSummary = await summaryChain.invoke({
       searchResults: combinedContent,
@@ -76,21 +82,23 @@ export async function webSearchAgent(state: StateType) {
         r.results.map((item: { url: string }) => ({ query: r.query, url: item.url }))
       ))
     });
-
-    // console.log(`\n🔎 Web Search Agent Completed`);
+    
+    // Convert the summary into a single string.
+    let summaryContent: string;
+    if (typeof batchSummary === 'string') {
+      summaryContent = batchSummary;
+    } else {
+      summaryContent = batchSummary.content ? batchSummary.content.toString() : batchSummary.toString();
+    }
+    
+    console.log(`\n✅ Web Search Agent Completed`);
     return { 
       ...state, 
-      webSearchResponse: [{
-        query: "Combined Search Results",
-        summary: batchSummary.content.toString()
-      }]
+      webSearchResponse: summaryContent
     };
   } catch (err: unknown) {
     const error = err as Error;
-    // console.error("❌ Error generating summary:", error.message);
-    if (error.message.includes("413") || error.message.includes("tokens")) {
-      // console.log("⚠️ Token limit exceeded, falling back to individual summaries");
-    }
+    console.error("❌ Error generating summary:", error.message);
     return state;
   }
 }

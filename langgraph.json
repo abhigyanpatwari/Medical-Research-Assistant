@@ -1,0 +1,15 @@
+{
+  "node_version": "20",
+  "dependencies": ["."],
+  "graphs": {
+    "medicalAssistantGraph": "./agentGraph.ts:createAgentGraph"
+  },
+  "env": ".env",
+  "store": {
+    "index": {
+      "embed": "openai:text-embeddings-3-small",
+      "dims": 1536,
+      "fields": ["$"]
+    }
+  }
+} 

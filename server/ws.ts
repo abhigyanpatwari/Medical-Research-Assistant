@@ -48,13 +48,25 @@ Deno.serve({ port: 8080 }, async (req: Request): Promise<Response> => {
     try {
       const graph = createAgentGraph();
       const stream = await graph.stream(initialState);
+      
       for await (const event of stream) {
-        socket.send(JSON.stringify(event));
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify(event));
+        } else {
+          console.warn("WebSocket closed while streaming.");
+          break;
+        }
       }
-      socket.send(JSON.stringify({ type: "end" }));
+
+      // Signal completion.
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: "end", message: "Workflow complete." }));
+      }
     } catch (error: unknown) {
-      console.error("Error in workflow:", error);
-      socket.send(JSON.stringify({ type: "error", error: (error as Error).message }));
+      console.error("Error during workflow processing:", error);
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: "error", message: (error as Error).message }));
+      }
     }
   };
 

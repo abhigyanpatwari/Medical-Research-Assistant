@@ -61,3 +61,4 @@ async function runMedicalQuery() {
 if (import.meta.main) {
   runMedicalQuery();
 }
+

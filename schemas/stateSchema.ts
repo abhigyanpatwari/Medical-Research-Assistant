@@ -12,8 +12,8 @@ export const StateSchema = z.object({
   messages: z.array(z.custom<BaseMessage>()),
   userQuery: z.string(),
   tasks: z.any(),
-  medILlamaResponse: z.array(AgentResponse),
-  webSearchResponse: z.array(AgentResponse),
+  medILlamaResponse: z.string(),
+  webSearchResponse: z.string(),
   finalResponse: z.string(),
   isSimpleQuery: z.boolean(),
   iterationCount: z.number().optional(),
@@ -35,8 +35,8 @@ export interface RequiredAgents {
 export interface StateType {
   messages: BaseMessage[];
   userQuery: string;
-  medILlamaResponse: { content: string; metadata?: Record<string, any> }[];
-  webSearchResponse: { content: string; metadata?: Record<string, any> }[];
+  medILlamaResponse: string;
+  webSearchResponse: string;
   finalResponse: string;
   tasks?: any;
   isSimpleQuery: boolean;
