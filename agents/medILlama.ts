@@ -5,50 +5,64 @@ import { medILlamaPrompt } from "../utils/prompts.ts";
 const llm = new Ollama({
   model: Deno.env.get("OLLAMA_MODEL") as string,
   baseUrl: Deno.env.get("OLLAMA_BASE_URL") as string,
-  
 });
+
+// Global variable to store the latest medILlama response
+export let medILlamaGlobalResponse: string = "";
 
 export async function medILlamaAgent(state: StateType) {
   console.log("\n🏥 MedILlama Agent Started");
   const tasks = state.tasks.MedILlama || [];
   const responses = [];
 
+  // Clear previous response when starting a new run
+  medILlamaGlobalResponse = "";
+
   for (const task of tasks) {
     try {
+      // Create the chain
       const chain = medILlamaPrompt.pipe(llm);
-      const response: any = await chain.invoke({ query: task.query });
       
-      // Ensure the response is stored as a single string:
-      let content: string;
-      if (Array.isArray(response)) {
-        content = response.join('');
-      } else if (typeof response === "string") {
-        content = response;
-      } else {
-        content = response.content ? response.content.toString() : response.toString();
+      // Handle streaming properly by collecting all chunks
+      let fullResponse = "";
+      
+      // Use explicit streaming and collect all chunks
+      const stream = await chain.invoke({ query: task.query });
+      
+      // Process each chunk and accumulate them
+      for await (const chunk of stream) {
+        if (typeof chunk === "string") {
+          fullResponse += chunk;
+        } else if (chunk.content) {
+          fullResponse += chunk.content;
+        } else {
+          fullResponse += String(chunk);
+        }
       }
-
+      
+      // Push the complete response as an object
       responses.push({
-        content,
+        content: fullResponse,
         metadata: { task: task.query }
       });
     } catch (error) {
       responses.push({
         content: "Error processing medical query. Please try again later.",
-        metadata: { task: task.query, error: error instanceof Error ? error.message : String(error) }
+        metadata: { task: task.query, error: error instanceof Error ? error.message : String(error)}
       });
     }
   }
 
-  // Combine all responses into one string.
-  const combinedContent = responses
-    .map(r => `Query: ${r.metadata?.task}\n${r.content}`)
-    .join("\n\n---\n\n");
+  // Create a combined response
+  const combinedResponse = responses
+    .map((r) => `Task: ${r.metadata.task}\nResponse: ${r.content}`)
+    .join("\n\n\n-------------------------------------------------------------------------\n\n\n");
 
-  console.log(combinedContent);
-  
+  // console.log(combinedResponse);
 
-  console.log(`🏥 MedILlama Agent Completed (${responses.length} responses)`);
+  // Update global variable with the new response
+  medILlamaGlobalResponse = combinedResponse;
 
-  return { ...state, medILlamaResponse: combinedContent };
+  // Return the combined string in medILlamaResponse for compatibility
+  return { ...state, medILlamaResponse: combinedResponse };
 }

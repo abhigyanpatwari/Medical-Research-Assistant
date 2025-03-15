@@ -1,5 +1,6 @@
 import { Ollama } from "npm:@langchain/ollama";
 import { ChatGroq } from "npm:@langchain/groq";
+import { ChatGoogleGenerativeAI } from "npm:@langchain/google-genai";
 
 export const MAX_ITERATIONS = 3;
 
@@ -15,3 +16,11 @@ export const LLM = new ChatGroq({
     apiKey: Deno.env.get("GROQ_API_KEY") as string,
     model: "llama-3.3-70b-versatile",
 });
+
+
+// export const LLM = new ChatGoogleGenerativeAI({
+//     apiKey: Deno.env.get("GOOGLE_API_KEY") as string,
+//     model: "gemini-1.5-pro",
+//     temperature: 0,
+//     maxRetries: 2,
+//   });

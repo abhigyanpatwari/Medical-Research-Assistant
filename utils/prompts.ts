@@ -72,6 +72,7 @@ export const taskDecompositionPrompt = ChatPromptTemplate.fromMessages([
     - Each agent should only be used if it provides unique value for answering the query
     - Strongly consider using Web Search Agent unless the query is extremely basic (like simple definitions) or purely theoretical
     - The response will be more valuable with citations and current data, so prefer including Web Search when in doubt
+    - You may generate multiple tasks for the same agent, but try to fit all the tasks for each agent into 1-3 queries.
 
     IMPORTANT: Remember that the sub agents dont have access to the user query, so you must provide all the necessary information in the task for each agent. 
     `

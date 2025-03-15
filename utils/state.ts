@@ -18,8 +18,12 @@ export const StateAnnotation = {
     value: (_old: string, update: string) => update,
     default: () => "",
   },
+  // medILlamaResponse: {
+  //   value: (old: string, update: string | undefined) => update === undefined ? old : update,
+  //   default: () => "",
+  // },
   webSearchResponse: {
-    value: (_old: any[], update: any[]) => update,
+    value: (old: string, update: string) => update,
     default: () => "",
   },
   finalResponse: {

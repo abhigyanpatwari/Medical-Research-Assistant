@@ -43,3 +43,6 @@ Thumbs.db
 
 # Repomix files
 repomix-output.txt
+
+# LangGraph API
+.langgraph_api

@@ -61,7 +61,7 @@ Stomach ulcers can be treated with medications such as aspirin, vitamin C, and a
   try {
     let result;
     switch (agent) {
-      case "o":
+      case "orchestrator":
         result = await orchestrateQuery({
           userQuery: testQuery,
           tasks: [],
@@ -71,7 +71,7 @@ Stomach ulcers can be treated with medications such as aspirin, vitamin C, and a
         console.log(result);
         break;
 
-      case "m":
+      case "medillama":
         // Test state with predefined MedILlama tasks 
         result = await medILlamaAgent({
           userQuery: testQuery,
