@@ -24,41 +24,34 @@ async function runMedicalQuery() {
     reflectionFeedback: null
   };
 
-  // const config = {
-  //   channels: {
-  //     configurables: {
-  //       thread_id: "stream_events"
-  //     }
-  //   }
-  // };
-
   const config = {
     configurables: {
       thread_id: "stream_events"
     },
-    streamMode: "updates" as const
-  }
+    streamMode: ["updates", "messages"] as const
+  };
 
   try {
-    // console.log("\nProcessing your query...");
-    // const result = await graph.invoke(initialState);
-
-    
-    // console.log("\n=== Response ===");
-    // console.log(result.finalResponse);
-
-    const stream = await graph.stream(initialState)
+    const stream = await graph.stream(initialState, config);
 
     for await (const event of stream) {
-      console.log(event)
+      // Events now come as tuples with the mode and data
+      const [mode, data] = event;
+      
+      if (mode === "updates") {
+        console.log("State update:", data);
+      } else if (mode === "messages") {
+        // Token streaming data comes with both the message chunk and metadata
+        const [messageChunk, metadata] = data;
+        console.log(`Token from ${metadata.langgraph_node}: ${messageChunk.content}`);
+      }
     }
-
   } catch (error) {
     console.error("Error:", error);
   }
 }
 
+// Execute the function when this is the main module
 if (import.meta.main) {
   runMedicalQuery();
 }
-

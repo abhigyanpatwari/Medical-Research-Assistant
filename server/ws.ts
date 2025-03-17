@@ -45,22 +45,58 @@ Deno.serve({ port: 8080 }, async (req: Request): Promise<Response> => {
       isSimpleQuery: false,
     };
 
+    // Track the final state to access after streaming is complete
+    let finalState: StateType | null = null;
+
     try {
       const graph = createAgentGraph();
-      const stream = await graph.stream(initialState);
+      
+      // Configure streaming to include both updates and token-by-token messages
+      const config = {
+        configurables: {
+          thread_id: "stream_events"
+        },
+        streamMode: ["updates", "messages"] as const
+      };
+      
+      const stream = await graph.stream(initialState, config);
       
       for await (const event of stream) {
         if (socket.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify(event));
+          const [mode, data] = event;
+          
+          if (mode === "updates") {
+            // Store the latest state for the end message
+            finalState = data as StateType;
+            
+            // Send state updates with type marker
+            socket.send(JSON.stringify({
+              type: "state_update",
+              data
+            }));
+          } else if (mode === "messages") {
+            // Send token streaming data with type marker
+            const [messageChunk, metadata] = data;
+            socket.send(JSON.stringify({
+              type: "token",
+              content: messageChunk.content,
+              nodeId: metadata.langgraph_node,
+              metadata
+            }));
+          }
         } else {
           console.warn("WebSocket closed while streaming.");
           break;
         }
       }
 
-      // Signal completion.
+      // Signal completion with the final response from the final state
       if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: "end", message: "Workflow complete." }));
+        socket.send(JSON.stringify({ 
+          type: "end", 
+          message: "Workflow complete.", 
+          finalResponse: finalState?.finalResponse || ""
+        }));
       }
     } catch (error: unknown) {
       console.error("Error during workflow processing:", error);
@@ -79,4 +115,5 @@ Deno.serve({ port: 8080 }, async (req: Request): Promise<Response> => {
   };
 
   return response;
-}); 
+});
+
