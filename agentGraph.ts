@@ -81,6 +81,22 @@ export function createAgentGraph() {
       ["__end__", "orchestrate"]
     );
 
+  // Add streaming support to the graph configuration
+  const config = {
+    configurables: {
+      thread_id: "stream_events"
+    },
+    streamMode: ["updates", "messages"] as const,
+    stream: {
+      output: (chunk: any, nodeId: string) => {
+        if (nodeId === "medILlama") {
+          return { content: chunk.content, nodeId: "medILlama" };
+        }
+        return chunk;
+      }
+    }
+  };
+
   return workflow.compile();
 }
 

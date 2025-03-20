@@ -22,8 +22,12 @@ export const StateAnnotation = {
   //   value: (old: string, update: string | undefined) => update === undefined ? old : update,
   //   default: () => "",
   // },
+  // medILlamaResponse: {
+  //   value: (_old: string, update: string) => [...(_old || ""), ...update],
+  //   default: () => "",
+  // },
   webSearchResponse: {
-    value: (old: string, update: string) => update,
+    value: (_old: string, update: string) => update,
     default: () => "",
   },
   finalResponse: {

@@ -28,22 +28,23 @@ async function runMedicalQuery() {
     configurables: {
       thread_id: "stream_events"
     },
-    streamMode: ["updates", "messages"] as const
+    // streamMode: ["updates", "messages"] as const
+    streamMode: ["updates"] as const
   };
 
   try {
     const stream = await graph.stream(initialState, config);
 
     for await (const event of stream) {
-      // Events now come as tuples with the mode and data
       const [mode, data] = event;
       
       if (mode === "updates") {
         console.log("State update:", data);
       } else if (mode === "messages") {
-        // Token streaming data comes with both the message chunk and metadata
         const [messageChunk, metadata] = data;
-        console.log(`Token from ${metadata.langgraph_node}: ${messageChunk.content}`);
+        if (metadata.langgraph_node === "medILlama") {
+          process.stdout.write(messageChunk.content); // Stream tokens to console
+        }
       }
     }
   } catch (error) {

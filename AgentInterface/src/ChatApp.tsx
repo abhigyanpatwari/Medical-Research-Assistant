@@ -52,45 +52,88 @@ export function ChatApp() {
     
     socket.onmessage = (event) => {
       try {
-        console.log("Received message:", event.data.slice(0, 100) + "..."); // Log first 100 chars
+        console.log("Raw message:", event.data);
         const data = JSON.parse(event.data);
         
         if (data.type === "token") {
-          const nodeId = data.nodeId;
-          console.log(`Token from ${nodeId}: "${data.content}"`);
+          const { nodeId, content } = data;
           
-          // Mark this agent as active
-          setActiveAgents(prev => {
+          // Avoid token-based updates for medILlama and reflect,
+          // since their full responses come via state_update.
+          if (nodeId === "medILlama" || nodeId === "reflect") return;
+          
+          console.log(`Token from ${nodeId}: "${content}"`);
+          
+          setActiveAgents((prev) => {
             const newSet = new Set(prev);
             newSet.add(nodeId);
             return newSet;
           });
           
-          // Update the agent output with visual token-by-token feedback
-          setAgentOutputs(prev => ({
+          setAgentOutputs((prev) => ({
             ...prev,
-            [nodeId]: (prev[nodeId] || "") + data.content
+            [nodeId]: (prev[nodeId] || "") + content,
           }));
-        } 
-        else if (data.type === "state_update") {
-          console.log("State update received");
-        }
-        else if (data.type === "end") {
-          console.log("End message received");
-          // Add the final response to chat history
+        } else if (data.type === "state_update") {
+          console.log("State update received:", data);
+          
+          // Check if this state update contains medILlama data.
+          const medILlamaData = data.data?.medILlama;
+          if (medILlamaData?.medILlamaResponse) {
+            console.log("FOUND MEDILLLAMA RESPONSE:", medILlamaData.medILlamaResponse);
+            
+            setAgentOutputs((prev) => ({
+              ...prev,
+              medILlama: medILlamaData.medILlamaResponse,
+            }));
+            
+            setActiveAgents((prev) => {
+              const newSet = new Set(prev);
+              newSet.add("medILlama");
+              return newSet;
+            });
+          }
+
+          // Check if this state update contains reflect agent data.
+          // Note: The reflection agent returns the fields "qualityPassed" and "reflectionFeedback" as defined in state.ts.
+          const reflectData = data.data?.reflect;
+          if (reflectData) {
+            console.log("FOUND REFLECT RESPONSE:", reflectData);
+            let reflectOutput = "";
+            if (reflectData.qualityPassed === false) {
+              // If reflection failed, display the feedback (if any) with a helpful message.
+              reflectOutput = reflectData.reflectionFeedback
+                ? `Quality Check Failed:\n${reflectData.reflectionFeedback}`
+                : "Quality check failed. Please try again.";
+            } else {
+              // If quality passed, indicate that no further feedback is provided.
+              reflectOutput = "Quality Check Passed. No feedback provided.";
+            }
+
+            setAgentOutputs((prev) => ({
+              ...prev,
+              reflect: reflectOutput,
+            }));
+            
+            setActiveAgents((prev) => {
+              const newSet = new Set(prev);
+              newSet.add("reflect");
+              return newSet;
+            });
+          }
+        } else if (data.type === "end") {
+          console.log("End message with final response:", data.finalResponse);
           if (data.finalResponse) {
-            setChatHistory(prev => [
+            setChatHistory((prev) => [
               ...prev, 
-              {role: "assistant", content: data.finalResponse}
+              { role: "assistant", content: data.finalResponse }
             ]);
           }
-          
-          // Clear active agents after a short delay
+          // Clear active agents after a short delay.
           setTimeout(() => {
             setActiveAgents(new Set());
           }, 500);
-        }
-        else if (data.type === "error") {
+        } else if (data.type === "error") {
           console.error("Error from server:", data.message);
           setConnectionStatus("Error: " + data.message);
         }
@@ -198,7 +241,34 @@ export function ChatApp() {
 
         {/* Agent Panels */}
         <div className="flex flex-col gap-4">
-          {AGENT_IDS.map((agentId) => (
+          {/* Special medILlama panel with direct output */}
+          <Card key="medILlama">
+            <CardHeader className="pb-3">
+              <CardTitle className="capitalize flex justify-between items-center">
+                <span>Medical Knowledge Agent</span>
+                {agentOutputs.medILlama ? (
+                  <Badge variant="outline">Complete</Badge>
+                ) : activeAgents.has("medILlama") ? (
+                  <Badge variant="success" className="animate-pulse">Active</Badge>
+                ) : null}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-96 overflow-y-auto p-4 bg-white">
+              {agentOutputs.medILlama ? (
+                <pre className="whitespace-pre-wrap">
+                  {agentOutputs.medILlama}
+                  {activeAgents.has("medILlama") && (
+                    <span className="inline-block w-2 h-4 bg-current opacity-75 animate-pulse ml-1">|</span>
+                  )}
+                </pre>
+              ) : (
+                <p className="text-gray-500">Waiting for medical analysis...</p>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Other agent panels */}
+          {AGENT_IDS.filter(id => id !== "medILlama").map((agentId) => (
             <Card key={agentId}>
               <CardHeader className="pb-3">
                 <CardTitle className="capitalize flex justify-between items-center">
@@ -211,7 +281,9 @@ export function ChatApp() {
                 </CardTitle>
               </CardHeader>
               <CardContent 
-                className="h-48 overflow-y-auto p-4 bg-gray-100 transition-all duration-200"
+                className={`h-96 overflow-y-auto p-4 transition-all duration-300 ${
+                  activeAgents.has(agentId) ? "bg-blue-50" : "bg-white"
+                }`}
                 ref={el => agentRefs.current[agentId] = el}
               >
                 {agentOutputs[agentId] ? (
