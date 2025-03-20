@@ -95,7 +95,7 @@ Deno.serve({ port: 8080 }, async (req: Request): Promise<Response> => {
         socket.send(JSON.stringify({ 
           type: "end", 
           message: "Workflow complete.", 
-          finalResponse: finalState?.finalResponse || ""
+          // finalResponse: state?.finalResponse || ""
         }));
       }
     } catch (error: unknown) {
