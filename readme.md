@@ -74,22 +74,6 @@ The diagram might show how each agent connects within the workflow:
 
 This design ensures that only the relevant agents are invoked and uses **parallel agent execution wherever possible**, reducing overhead and improving answer quality.
 
----
-
-## Architecture Diagram
-
-![1742631440562](image/readme/1742631440562.png)
-
-The diagram might show how each agent connects within the workflow:
-
-- **Evaluation** → decides `simple` vs. `complex`
-- **Orchestration** → decomposes tasks and assigns them to appropriate agents
-- **MedILlama/Web Search/RAG** → gather medical data in parallel
-- **Compile** → unify outputs and format it in proper structure with appropriate citations
-- **Reflect** → quality check and potential feedback loop
-
----
-
 ## Detailed Agent Workflow
 
 Below is a deeper look at each agent and how it ties into the state graph (see `agentGraph.ts`).
