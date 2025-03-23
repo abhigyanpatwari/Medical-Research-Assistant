@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { SendIcon, Cpu, Search, Brain, Code, ListChecks, RefreshCcw, Database, ChevronDown, ChevronUp, X } from "lucide-react";
+import { SendIcon, Cpu, Search, Brain, Code, ListChecks, RefreshCcw, Database, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
@@ -10,7 +10,6 @@ import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from "framer-motion";
 import AgentDiagram from "./components/AgentDiagram";
 import { AGENT_NODES } from "./components/AgentDiagram";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // Agent IDs should match the node IDs in your backend
 const AGENT_IDS = ["evaluate", "orchestrate", "medILlama", "web_search", "rag", "compile", "reflect"];
@@ -71,13 +70,15 @@ export function ChatApp() {
   const [agentOutputs, setAgentOutputs] = useState<Record<string, string>>({});
   const [finalResponse, setFinalResponse] = useState<string>("");
   const [userInput, setUserInput] = useState<string>("");
-  const [showResponseModal, setShowResponseModal] = useState<boolean>(false);
   
   // WebSocket reference
   const ws = useRef<WebSocket | null>(null);
   
   // Add this state and refs
   const agentTimers = useRef<{ [key: string]: NodeJS.Timeout }>({});
+  
+  // Add a ref to store the finalResponse separately from state
+  const lastFinalResponse = useRef<string>("");
   
   // Connect to WebSocket when component mounts
   useEffect(() => {
@@ -134,13 +135,45 @@ export function ChatApp() {
     setAgentOutputs(initialOutputs);
   }, []);
   
-  // Improved WebSocket message handler with more robust ID mapping and debugging
+  // Enhance handleWebSocketMessage to monitor specifically for qualityPassed=true
   const handleWebSocketMessage = (data: any) => {
     console.log("Received WebSocket message:", data);
     
     switch (data.type) {
       case "state_update":
         console.log("State update received:", data.data);
+        
+        // Check specifically for reflection agent with qualityPassed=true
+        if (data.data?.reflect && data.data.reflect.qualityPassed === true) {
+          console.log("Quality check passed! Storing final response...");
+          
+          // Store the finalResponse from this state update
+          if (data.data.reflect.finalResponse && data.data.reflect.finalResponse.trim()) {
+            console.log("Found finalResponse from reflection with quality passed:", 
+              data.data.reflect.finalResponse.substring(0, 50) + "...");
+            
+            lastFinalResponse.current = data.data.reflect.finalResponse;
+            setFinalResponse(data.data.reflect.finalResponse);
+          }
+        }
+        
+        // Also check for finalResponse in any state update (as a backup)
+        if (data.data?.finalResponse && data.data.finalResponse.trim()) {
+          console.log("Found general finalResponse in state update");
+          lastFinalResponse.current = data.data.finalResponse;
+          setFinalResponse(data.data.finalResponse);
+        }
+        
+        // Also look for nested finalResponse
+        Object.keys(data.data || {}).forEach(agent => {
+          if (data.data[agent]?.finalResponse && data.data[agent].finalResponse.trim()) {
+            console.log(`Found finalResponse in ${agent} state:`, 
+              data.data[agent].finalResponse.substring(0, 50) + "...");
+            lastFinalResponse.current = data.data[agent].finalResponse;
+            setFinalResponse(data.data[agent].finalResponse);
+          }
+        });
+        
         updateAgentStates(data.data);
         break;
         
@@ -231,21 +264,22 @@ export function ChatApp() {
         break;
         
       case "end":
-        console.log("Workflow complete:", data);
-        if (data.finalResponse) {
-          setFinalResponse(data.finalResponse);
-          
-          // Show the modal with the final response
+        console.log("Workflow complete. Checking stored finalResponse:", 
+          lastFinalResponse.current ? lastFinalResponse.current.substring(0, 50) + "..." : "none");
+        
+        // Use our stored finalResponse
+        if (lastFinalResponse.current) {
+          setFinalResponse(lastFinalResponse.current);
+          setShowResponseModal(true);
+        } else {
+          console.warn("No finalResponse found after workflow completion");
+          setFinalResponse("**No response was generated.** Please try again with a different query.");
           setShowResponseModal(true);
         }
         break;
         
       case "error":
         console.error("Backend error:", data.message);
-        
-        // Show error in the modal
-        setFinalResponse(`**Error:** ${data.message || "An unknown error occurred"}`);
-        setShowResponseModal(true);
         break;
         
       default:
@@ -534,10 +568,11 @@ export function ChatApp() {
     setActiveAgents(newActiveAgents);
     setCompletedAgents(newCompletedAgents);
     
-    // Update final response if available and show modal
-    if (state.finalResponse) {
+    // Update final response if available
+    if (state.finalResponse && state.finalResponse.trim()) {
+      console.log("Updating finalResponse from state:", state.finalResponse.substring(0, 50) + "...");
+      lastFinalResponse.current = state.finalResponse;
       setFinalResponse(state.finalResponse);
-      setShowResponseModal(true);
     }
   };
   
@@ -566,6 +601,7 @@ export function ChatApp() {
     });
   };
   
+  // Update sendMessage to clear the stored finalResponse
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || connectionStatus !== "Connected" || !ws.current) return;
@@ -573,21 +609,22 @@ export function ChatApp() {
     // Store user input for display
     setUserInput(query);
     
-    // Reset JUST the active and completed agents, but NOT all agent outputs
+    // Reset active and completed agents
     setActiveAgents(new Set());
     setCompletedAgents(new Set());
     
-    // Don't completely reset agent outputs, but clear previous response content
+    // Reset agent outputs
     setAgentOutputs(prev => {
       const newOutputs = { ...prev };
       Object.keys(newOutputs).forEach(agent => {
-        // Reset content but maintain visibility
         newOutputs[agent] = `${agent} will be activated when needed...`;
       });
       return newOutputs;
     });
     
+    // Clear finalResponse state AND the stored ref
     setFinalResponse("");
+    lastFinalResponse.current = "";
     
     // Send message to WebSocket server
     const message = JSON.stringify({ userQuery: query });
@@ -786,42 +823,6 @@ export function ChatApp() {
           </form>
         </div>
       </div>
-      
-      {/* Response Modal */}
-      <Dialog open={showResponseModal} onOpenChange={setShowResponseModal}>
-        <DialogContent className="max-w-3xl bg-[#1e293b] border-[#334155] text-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-cyan-400 flex justify-between items-center">
-              <span>Final Answer</span>
-              <button 
-                onClick={() => setShowResponseModal(false)}
-                className="p-1 rounded-full hover:bg-[#334155] transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="overflow-y-auto max-h-[70vh] markdown-content">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw, rehypeSanitize]}
-              className="prose prose-invert prose-sm max-w-none"
-            >
-              {finalResponse}
-            </ReactMarkdown>
-          </div>
-          
-          <div className="flex justify-end mt-4">
-            <Button
-              onClick={() => setShowResponseModal(false)}
-              className="bg-cyan-600 hover:bg-cyan-700"
-            >
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
