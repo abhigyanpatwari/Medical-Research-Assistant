@@ -23,7 +23,7 @@ export function createAgentGraph() {
     .addNode("compile", compileAgent)
     .addNode("reflect", reflectionAgent)
 
-  // Define the flow
+// Define the flow
   graph
     .addEdge("__start__", "evaluate")
     .addConditionalEdges(

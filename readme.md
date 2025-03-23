@@ -5,20 +5,21 @@ Medical Research Assistant is a multi-agent system designed to answer complex me
 > **Disclaimer**
 > The system is intended for research and educational purposes. Its outputs are *not* professional medical advice.
 
+
+
 ---
 
 ## Table of Contents
 
 1. [Key Components](#key-components)
 2. [High-Level Flow](#high-level-flow)
-3. [Architecture Diagram](#architecture-diagram)
-4. [Detailed Agent Workflow](#detailed-agent-workflow)
-5. [Iteration &amp; Feedback Mechanism](#iteration--feedback-mechanism)
-6. [Installation &amp; Setup](#installation--setup)
-7. [Usage](#usage)
-8. [Technical Notes](#technical-notes)
-9. [Roadmap](#roadmap)
-10. [License &amp; Disclaimer](#license--disclaimer)
+3. [Detailed Agent Workflow](#detailed-agent-workflow)
+4. [Iteration &amp; Feedback Mechanism](#iteration--feedback-mechanism)
+5. [Installation &amp; Setup](#installation--setup)
+6. [Usage](#usage)
+7. [Technical Notes](#technical-notes)
+8. [Roadmap](#roadmap)
+9. [License &amp; Disclaimer](#license--disclaimer)
 
 ---
 
@@ -60,20 +61,6 @@ Medical Research Assistant is a multi-agent system designed to answer complex me
    - Otherwise, improvement feedback is generated, and the system iterates (returning to **Orchestration** with the new feedback).
 
 This design ensures that only the relevant agents are invoked and uses **parallel agent execution wherever possible**, reducing overhead and improving answer quality.
-
----
-
-## Architecture Diagram
-
-![1742631440562](image/readme/1742631440562.png)
-
-The diagram might show how each agent connects within the workflow:
-
-- **Evaluation** → decides `simple` vs. `complex`
-- **Orchestration** → decomposes tasks and assigns them to appropriate agents
-- **MedILlama/Web Search/RAG** → gather medical data in parallel
-- **Compile** → unify outputs and format it in proper structure with appropriate citations
-- **Reflect** → quality check and potential feedback loop
 
 ---
 
@@ -239,121 +226,87 @@ This starts the client on http://localhost:5173.
 
 Once both the backend and frontend are running, simply navigate to [http://localhost:5173/](http://localhost:5173/) (or whichever port Vite is running on). You’ll see a user interface with:
 
-1.  **Chat Input**: Type in your medical question or query and press **Send**.
-    
-2.  **Chat History Panel**: Displays past user queries and system responses.
-    
-3.  **Agent Panels**: Shows a breakdown of each agent’s output. For example, the **MedILlama** panel provides detailed clinical explanations, while the **Web Search** panel lists summarized research findings.
-    
+1. **Chat Input**: Type in your medical question or query and press **Send**.
+2. **Chat History Panel**: Displays past user queries and system responses.
+3. **Agent Panels**: Shows a breakdown of each agent’s output. For example, the **MedILlama** panel provides detailed clinical explanations, while the **Web Search** panel lists summarized research findings.
 
 ### Example Queries
 
--   _“What are the treatment options for Type 2 Diabetes with comorbid hypertension?”_
-    
--   _“Explain how a low-carb diet affects weight management in PCOS.”_
-    
--   _“Give me the current guidelines for pediatric fever management.”_
-    
+- _“What are the treatment options for Type 2 Diabetes with comorbid hypertension?”_
+- _“Explain how a low-carb diet affects weight management in PCOS.”_
+- _“Give me the current guidelines for pediatric fever management.”_
 
 For complex questions, multiple panels will populate with different agents’ contributions. The final, compiled answer appears in the **Chat History** under “assistant”.
 
 ### Programmatic Usage (HTTP or WebSockets)
 
-1.  **HTTP**:
-    
-    -   Send a **POST** request to `http://localhost:8080` with a JSON body containing `{ "userQuery": "your question" }`.
-        
-    -   The response stream provides JSON lines with update events; you can continuously read until you receive an `end` event.
-        
-2.  **WebSockets**:
-    
-    -   Connect to `ws://localhost:8080`.
-        
-    -   Once the connection is open, you can send a raw string or JSON (e.g., just the user query or `{"userQuery":"your question"}`).
-        
-    -   You will receive multiple messages:
-        
-        -   **state_update** events containing the updated state (e.g., agent outputs)
-            
-        -   **token** events containing streamed tokens from certain agents (especially helpful if you want real-time partial results)
-            
-        -   A final **end** message indicating the workflow has completed
-            
+1. **HTTP**:
+
+   - Send a **POST** request to `http://localhost:8080` with a JSON body containing `{ "userQuery": "your question" }`.
+   - The response stream provides JSON lines with update events; you can continuously read until you receive an `end` event.
+2. **WebSockets**:
+
+   - Connect to `ws://localhost:8080`.
+   - Once the connection is open, you can send a raw string or JSON (e.g., just the user query or `{"userQuery":"your question"}`).
+   - You will receive multiple messages:
+
+     - **state_update** events containing the updated state (e.g., agent outputs)
+     - **token** events containing streamed tokens from certain agents (especially helpful if you want real-time partial results)
+     - A final **end** message indicating the workflow has completed
 
 Both interfaces are asynchronous and stream data back as it is generated, allowing you to integrate at whichever level best fits your application.
 
-----------
+---
 
 ## Technical Notes
 
-1.  **Parallel Agent Invocation**  
-    The system uses **LangGraph** and Deno concurrency to run _MedILlama_, _WebSearch_, and (eventually) _RAG_ in parallel, shortening total response time for complex queries.
-    
-2.  **Streaming Architecture**
-    
-    -   **Token Streaming** from the **MedILlama** agent is captured in the `ws.ts` server by hooking into **LangChain**’s streaming callback.
-        
-    -   **State Updates** are also streamed to keep the front end informed of each agent’s progress in near real-time.
-        
-3.  **Configuration & Secrets**
-    
-    -   `.env` controls API keys for **Groq** and **Tavily**, plus environment variables to connect to a local or remote **Ollama** instance.
-        
-    -   The default **port** is `8080`, but it can be changed if needed (modify the relevant server file or pass a `PORT` environment variable).
-        
-4.  **LLM Selection**
-    
-    -   **Groq** handles orchestrations, final compile steps, and large prompts.
-        
-    -   **Ollama** (with the specialized Biomed model) focuses on domain-specific medical tasks and reflection checks.
-        
-    -   This approach blends broad language capabilities (Groq) with specialized knowledge (LightEternal-Llama3-Merge-Biomed-8B).
-        
-5.  **Maximum Iterations**
-    
-    -   Set by `MAX_ITERATIONS` (default `3`) in `config.ts`.
-        
-    -   If reflection feedback isn’t resolved by the third iteration, the system returns the best effort response to avoid infinite loops.
-        
-6.  **Extensibility**
-    
-    -   The system is intentionally modular. You can add new agents or data tools by creating a new Node in `agentGraph.ts` and hooking into the state schema to pass their outputs to the compilation phase.
-        
+1. **Parallel Agent Invocation**The system uses **LangGraph** and Deno concurrency to run _MedILlama_, _WebSearch_, and (eventually) _RAG_ in parallel, shortening total response time for complex queries.
+2. **Streaming Architecture**
 
-----------
+   - **Token Streaming** from the **MedILlama** agent is captured in the `ws.ts` server by hooking into **LangChain**’s streaming callback.
+   - **State Updates** are also streamed to keep the front end informed of each agent’s progress in near real-time.
+3. **Configuration & Secrets**
+
+   - `.env` controls API keys for **Groq** and **Tavily**, plus environment variables to connect to a local or remote **Ollama** instance.
+   - The default **port** is `8080`, but it can be changed if needed (modify the relevant server file or pass a `PORT` environment variable).
+4. **LLM Selection**
+
+   - **Groq** handles orchestrations, final compile steps, and large prompts.
+   - **Ollama** (with the specialized Biomed model) focuses on domain-specific medical tasks and reflection checks.
+   - This approach blends broad language capabilities (Groq) with specialized knowledge (LightEternal-Llama3-Merge-Biomed-8B).
+5. **Maximum Iterations**
+
+   - Set by `MAX_ITERATIONS` (default `3`) in `config.ts`.
+   - If reflection feedback isn’t resolved by the third iteration, the system returns the best effort response to avoid infinite loops.
+6. **Extensibility**
+
+   - The system is intentionally modular. You can add new agents or data tools by creating a new Node in `agentGraph.ts` and hooking into the state schema to pass their outputs to the compilation phase.
+
+---
 
 ## Roadmap
 
-1.  **Finalize RAG Agent**
-    
-    -   Integrate direct access to specialized research databases (e.g., PubMed or internal knowledge base) using vector embeddings.
-        
-    -   Summarize relevant PDFs or scientific papers with more robust chunking strategies.
-        
-2.  **Enhanced UI**
-    
-    -   Provide user-selectable agent toggles (e.g., skip web search if the user only wants a quick answer).
-        
-    -   Real-time token streaming for _all_ agent outputs, not just medILlama.
-        
-3.  **More Detailed Reflection**
-    
-    -   Expand reflection logic to recommend not just “missing details,” but also alternative viewpoints or patient-centered customization.
-        
-    -   Possibly integrate **Hallucination Check** through specialized queries to a second validation LLM.
-        
-4.  **Confidence Scoring & Risk Warnings**
-    
-    -   Evaluate agent confidence in factual correctness.
-        
-    -   Mark high-risk medical advice with disclaimers and references to official guidelines.
-        
-5.  **Plugin Support**
-    
-    -   E.g., a plugin for scheduling telehealth appointments, or a plugin to fetch official medical guidelines from organizations like the WHO or NIH.
-        
+1. **Finalize RAG Agent**
 
-----------
+   - Integrate direct access to specialized research databases (e.g., PubMed or internal knowledge base) using vector embeddings.
+   - Summarize relevant PDFs or scientific papers with more robust chunking strategies.
+2. **Enhanced UI**
+
+   - Provide user-selectable agent toggles (e.g., skip web search if the user only wants a quick answer).
+   - Real-time token streaming for _all_ agent outputs, not just medILlama.
+3. **More Detailed Reflection**
+
+   - Expand reflection logic to recommend not just “missing details,” but also alternative viewpoints or patient-centered customization.
+   - Possibly integrate **Hallucination Check** through specialized queries to a second validation LLM.
+4. **Confidence Scoring & Risk Warnings**
+
+   - Evaluate agent confidence in factual correctness.
+   - Mark high-risk medical advice with disclaimers and references to official guidelines.
+5. **Plugin Support**
+
+   - E.g., a plugin for scheduling telehealth appointments, or a plugin to fetch official medical guidelines from organizations like the WHO or NIH.
+
+---
 
 ## License & Disclaimer
 
@@ -363,25 +316,17 @@ This project is licensed under the MIT License. You are free to use, modify, and
 
 ### Disclaimer
 
-1.  **Not Medical Advice**  
-    All information provided by this system is for **research and educational purposes** only. It is _not_ a substitute for professional medical advice, diagnosis, or treatment. Always seek the counsel of a qualified healthcare provider.
-    
-2.  **No Warranty**  
-    The software is provided “as is”, without warranty of any kind. Use it at your own risk. We disclaim all liability for any direct, indirect, or consequential harm that may arise from your use of the system.
-    
-3.  **Responsibility**
-    
-    -   By using this project, you acknowledge that the authors, contributors, and license holders are not responsible for any decision you make based on the system’s output.
-        
-    -   Always verify critical health information with multiple reputable sources and consult a licensed medical professional for definitive guidance.
-        
+1. **Not Medical Advice**All information provided by this system is for **research and educational purposes** only. It is _not_ a substitute for professional medical advice, diagnosis, or treatment. Always seek the counsel of a qualified healthcare provider.
+2. **No Warranty**The software is provided “as is”, without warranty of any kind. Use it at your own risk. We disclaim all liability for any direct, indirect, or consequential harm that may arise from your use of the system.
+3. **Responsibility**
 
-----------
+   - By using this project, you acknowledge that the authors, contributors, and license holders are not responsible for any decision you make based on the system’s output.
+   - Always verify critical health information with multiple reputable sources and consult a licensed medical professional for definitive guidance.
 
+---
 
 ### A Note of Thanks
 
 **Thank you so much for checking out the Medical Research Assistant!** I genuinely appreciate you taking the time to explore this personal project of mine. If you come up with new ideas, spot any bugs, or want to help make it better, feel free to open an issue or submit a pull request on GitHub—I’d absolutely love your feedback and collaboration.
 
 I hope it sparks your curiosity, helps you learn more about medical topics, and leads you to the right places for further research. Thanks again, and happy exploring!
-

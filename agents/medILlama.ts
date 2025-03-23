@@ -25,6 +25,8 @@ export async function medILlamaAgent(state: StateType) {
 
   try {
     const chain = medILlamaPrompt.pipe(llm);
+
+  
     
     // Use invoke to get the final result (no token-level streaming)
     const result = await chain.invoke({ 
