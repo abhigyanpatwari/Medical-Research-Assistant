@@ -3,35 +3,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SendIcon } from "lucide-react";
 
-const AGENT_IDS = ["evaluate", "medILlama", "web_search", "compile", "reflect"];
+const AGENT_IDS = ["evaluate", "orchestrate", "medILlama", "web_search", "compile", "reflect"];
 
 export function ChatApp() {
   const [query, setQuery] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("Disconnected");
-  const [chatHistory, setChatHistory] = useState<{role: string, content: string}[]>([]);
-  const [agentOutputs, setAgentOutputs] = useState<Record<string, string>>({});
+  const [chatHistory, setChatHistory] = useState<{
+    role: string; 
+    content: string;
+    agents?: Record<string, string>;
+    agentsActive?: boolean;
+  }[]>([]);
+  const [currentAgentOutputs, setCurrentAgentOutputs] = useState<Record<string, string>>({});
   const [activeAgents, setActiveAgents] = useState<Set<string>>(new Set());
+  const [isProcessing, setIsProcessing] = useState(false);
   
-  // Create refs for each agent's panel to enable auto-scrolling
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const agentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const socketRef = useRef<WebSocket | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll agent panels when new content arrives
+  // Auto-scroll chat when content changes
   useEffect(() => {
-    Object.keys(agentOutputs).forEach(agentId => {
-      if (agentRefs.current[agentId]) {
-        const panel = agentRefs.current[agentId];
-        if (panel) {
-          panel.scrollTop = panel.scrollHeight;
-        }
+    setTimeout(() => {
+      if (bottomRef.current) {
+        bottomRef.current.scrollIntoView({ behavior: "smooth" });
       }
-    });
-  }, [agentOutputs]);
+    }, 100);
+  }, [chatHistory, currentAgentOutputs, activeAgents]);
 
   // Initialize WebSocket connection
   useEffect(() => {
-    // Create WebSocket connection
     const socket = new WebSocket("ws://localhost:8080");
     
     socket.onopen = () => {
@@ -43,99 +47,175 @@ export function ChatApp() {
       console.log("WebSocket disconnected");
       setConnectionStatus("Disconnected");
       setActiveAgents(new Set());
+      setIsProcessing(false);
     };
     
     socket.onerror = (error) => {
       console.error("WebSocket error:", error);
       setConnectionStatus("Error");
+      setIsProcessing(false);
     };
     
     socket.onmessage = (event) => {
       try {
-        console.log("Raw message:", event.data);
+        console.log("Received message:", event.data.slice(0, 100) + "...");
         const data = JSON.parse(event.data);
         
         if (data.type === "token") {
-          const { nodeId, content } = data;
+          const nodeId = data.nodeId;
+          console.log(`Token from ${nodeId}: "${data.content}"`);
           
-          // Avoid token-based updates for medILlama and reflect,
-          // since their full responses come via state_update.
-          if (nodeId === "medILlama" || nodeId === "reflect") return;
-          
-          console.log(`Token from ${nodeId}: "${content}"`);
-          
-          setActiveAgents((prev) => {
+          // Mark this agent as active
+          setActiveAgents(prev => {
             const newSet = new Set(prev);
             newSet.add(nodeId);
             return newSet;
           });
           
-          setAgentOutputs((prev) => ({
+          // Update the agent output
+          setCurrentAgentOutputs(prev => ({
             ...prev,
-            [nodeId]: (prev[nodeId] || "") + content,
+            [nodeId]: (prev[nodeId] || "") + data.content
           }));
-        } else if (data.type === "state_update") {
-          console.log("State update received:", data);
           
-          // Check if this state update contains medILlama data.
-          const medILlamaData = data.data?.medILlama;
-          if (medILlamaData?.medILlamaResponse) {
-            console.log("FOUND MEDILLLAMA RESPONSE:", medILlamaData.medILlamaResponse);
+          setIsProcessing(true);
+        } 
+        else if (data.type === "state_update") {
+          console.log("State update received", data);
+          // Handle special agents that use state updates
+          const state = data.data;
+          
+          // Debug the structure of the state data
+          console.log("State structure:", JSON.stringify(state, null, 2));
+          
+          // Handle orchestrator output from state updates - more flexible handling
+          if (state?.orchestrate) {
+            console.log("Orchestrate data found:", state.orchestrate);
             
-            setAgentOutputs((prev) => ({
+            // Try to handle different possible structures
+            const requiredAgents = state.orchestrate.requiredAgents || 
+                                  state.orchestrate.agents || 
+                                  {};
+            
+            let orchestrateOutput = "Orchestration plan:\n";
+            
+            // Try to display whatever information is available
+            if (requiredAgents.medILlama !== undefined) {
+              orchestrateOutput += `- MedILlama: ${requiredAgents.medILlama ? 'Yes' : 'No'}\n`;
+            }
+            
+            if (requiredAgents.webSearch !== undefined) {
+              orchestrateOutput += `- Web Search: ${requiredAgents.webSearch ? 'Yes' : 'No'}\n`;
+            }
+            
+            if (requiredAgents.rag !== undefined) {
+              orchestrateOutput += `- RAG: ${requiredAgents.rag ? 'Yes' : 'No'}\n`;
+            }
+            
+            // If there's a reasoning or plan field, include that too
+            if (state.orchestrate.reasoning) {
+              orchestrateOutput += `\nReasoning: ${state.orchestrate.reasoning}\n`;
+            }
+            
+            if (state.orchestrate.plan) {
+              orchestrateOutput += `\nPlan: ${state.orchestrate.plan}\n`;
+            }
+            
+            // Add raw JSON as fallback if nothing else is usable
+            if (orchestrateOutput === "Orchestration plan:\n") {
+              orchestrateOutput += `Raw data: ${JSON.stringify(state.orchestrate, null, 2)}`;
+            }
+            
+            setCurrentAgentOutputs(prev => ({
               ...prev,
-              medILlama: medILlamaData.medILlamaResponse,
+              orchestrate: orchestrateOutput
             }));
             
-            setActiveAgents((prev) => {
+            setActiveAgents(prev => {
+              const newSet = new Set(prev);
+              newSet.add("orchestrate");
+              return newSet;
+            });
+            
+            setIsProcessing(true);
+          }
+          
+          if (state?.medILlama?.medILlamaResponse) {
+            setCurrentAgentOutputs(prev => ({
+              ...prev,
+              medILlama: state.medILlama.medILlamaResponse
+            }));
+            
+            setActiveAgents(prev => {
               const newSet = new Set(prev);
               newSet.add("medILlama");
               return newSet;
             });
+            
+            setIsProcessing(true);
           }
-
-          // Check if this state update contains reflect agent data.
-          // Note: The reflection agent returns the fields "qualityPassed" and "reflectionFeedback" as defined in state.ts.
-          const reflectData = data.data?.reflect;
-          if (reflectData) {
-            console.log("FOUND REFLECT RESPONSE:", reflectData);
+          
+          if (state?.reflect) {
             let reflectOutput = "";
-            if (reflectData.qualityPassed === false) {
-              // If reflection failed, display the feedback (if any) with a helpful message.
-              reflectOutput = reflectData.reflectionFeedback
-                ? `Quality Check Failed:\n${reflectData.reflectionFeedback}`
+            if (state.reflect.qualityPassed === false) {
+              reflectOutput = state.reflect.reflectionFeedback
+                ? `Quality Check Failed:\n${state.reflect.reflectionFeedback}`
                 : "Quality check failed. Please try again.";
             } else {
-              // If quality passed, indicate that no further feedback is provided.
               reflectOutput = "Quality Check Passed. No feedback provided.";
             }
-
-            setAgentOutputs((prev) => ({
+            
+            setCurrentAgentOutputs(prev => ({
               ...prev,
-              reflect: reflectOutput,
+              reflect: reflectOutput
             }));
             
-            setActiveAgents((prev) => {
+            setActiveAgents(prev => {
               const newSet = new Set(prev);
               newSet.add("reflect");
               return newSet;
             });
+            
+            setIsProcessing(true);
           }
-        } else if (data.type === "end") {
-          console.log("End message with final response:", data.finalResponse);
+        }
+        else if (data.type === "end") {
+          console.log("End message received");
+          
+          // Preserve the agent outputs in chat history
+          if (Object.keys(currentAgentOutputs).length > 0) {
+            setChatHistory(prev => {
+              const newHistory = [...prev];
+              const lastUserMessageIndex = [...prev].reverse().findIndex(msg => msg.role === "user");
+              if (lastUserMessageIndex >= 0) {
+                const realIndex = prev.length - 1 - lastUserMessageIndex;
+                newHistory[realIndex] = {
+                  ...newHistory[realIndex],
+                  agents: {...currentAgentOutputs},
+                  agentsActive: false
+                };
+              }
+              return newHistory;
+            });
+          }
+          
+          // Add the final response to chat history
           if (data.finalResponse) {
-            setChatHistory((prev) => [
+            setChatHistory(prev => [
               ...prev, 
-              { role: "assistant", content: data.finalResponse }
+              {role: "assistant", content: data.finalResponse}
             ]);
           }
-          // Clear active agents after a short delay.
-          setTimeout(() => {
-            setActiveAgents(new Set());
-          }, 500);
-        } else if (data.type === "error") {
+          
+          // Don't clear agent outputs after processing
+          // setCurrentAgentOutputs({});
+          setActiveAgents(new Set());
+          setIsProcessing(false);
+        }
+        else if (data.type === "error") {
           console.error("Error from server:", data.message);
           setConnectionStatus("Error: " + data.message);
+          setIsProcessing(false);
         }
       } catch (error) {
         console.error("Error parsing message:", error);
@@ -160,17 +240,17 @@ export function ChatApp() {
     // Add user message to chat history
     setChatHistory(prev => [...prev, {role: "user", content: query}]);
     
-    // Clear all agent outputs for new query
-    setAgentOutputs({});
+    // Clear current agent outputs for new query
+    setCurrentAgentOutputs({});
     
     // Send the query
     if (socketRef.current.readyState === WebSocket.OPEN) {
       console.log("Sending query:", query);
-      socketRef.current.send(query);
+      socketRef.current.send(JSON.stringify({ userQuery: query }));
+      setIsProcessing(true);
     } else {
       console.error("WebSocket is not connected");
       setConnectionStatus("Disconnected - Trying to reconnect...");
-      // Could add reconnection logic here
     }
     
     // Clear input
@@ -178,142 +258,174 @@ export function ChatApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      {/* Header */}
-      <header className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Chatbot Interface</h1>
+    <div className="min-h-screen bg-[#121212] text-gray-100 flex flex-col">
+      {/* Floating Connection Status */}
+      <div className="fixed top-4 right-4 z-10">
         <Badge 
           variant={connectionStatus === "Connected" ? "success" : "destructive"}
+          className="animate-fadeIn"
         >
           {connectionStatus}
         </Badge>
-      </header>
-
-      {/* Chat input */}
-      <form
-        className="mb-4 flex gap-2"
-        onSubmit={sendMessage}
-      >
-        <Input
-          placeholder="Enter your query..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="flex-1"
-        />
-        <Button 
-          type="submit" 
-          disabled={!query.trim() || connectionStatus !== "Connected"}
-        >
-          Send
-        </Button>
-      </form>
-
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Chat History Panel */}
-        <Card className="h-full">
-          <CardHeader>
-            <CardTitle>Chat History</CardTitle>
-          </CardHeader>
-          <CardContent className="overflow-y-auto h-96 p-4">
-            {chatHistory.length > 0 ? (
-              chatHistory.map((message, index) => (
-                <div 
-                  key={index} 
-                  className={`mb-4 ${message.role === "user" ? "text-right" : "text-left"}`}
-                >
-                  <div 
-                    className={`inline-block p-3 rounded-lg ${
-                      message.role === "user" 
-                        ? "bg-blue-100 text-blue-800" 
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    <p>{message.content}</p>
+      </div>
+      
+      {/* Main Chat Container */}
+      <div className="flex-grow overflow-y-auto pb-24">
+        <div className="w-full max-w-4xl mx-auto flex flex-col p-4">
+          {/* Welcome Message when empty */}
+          {chatHistory.length === 0 && (
+            <div className="text-center py-16 animation-fade-in-up">
+              <h1 className="text-4xl font-bold mb-4">What do you want to know?</h1>
+              <p className="text-gray-400 mb-8">Ask anything to get started</p>
+            </div>
+          )}
+          
+          {/* Chat Messages */}
+          {chatHistory.map((message, index) => (
+            <div key={index} className="mb-8 animation-fade-in-up">
+              {/* User Message */}
+              {message.role === "user" && (
+                <div className="flex justify-end mb-4">
+                  <div className="bg-[#2C3E50] rounded-lg p-4 max-w-[80%]">
+                    <p className="whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-500">Send a message to start the conversation.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Agent Panels */}
-        <div className="flex flex-col gap-4">
-          {/* Special medILlama panel with direct output */}
-          <Card key="medILlama">
-            <CardHeader className="pb-3">
-              <CardTitle className="capitalize flex justify-between items-center">
-                <span>Medical Knowledge Agent</span>
-                {agentOutputs.medILlama ? (
-                  <Badge variant="outline">Complete</Badge>
-                ) : activeAgents.has("medILlama") ? (
-                  <Badge variant="success" className="animate-pulse">Active</Badge>
-                ) : null}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="h-96 overflow-y-auto p-4 bg-white">
-              {agentOutputs.medILlama ? (
-                <pre className="whitespace-pre-wrap">
-                  {agentOutputs.medILlama}
-                  {activeAgents.has("medILlama") && (
-                    <span className="inline-block w-2 h-4 bg-current opacity-75 animate-pulse ml-1">|</span>
-                  )}
-                </pre>
-              ) : (
-                <p className="text-gray-500">Waiting for medical analysis...</p>
               )}
-            </CardContent>
-          </Card>
-          
-          {/* Other agent panels */}
-          {AGENT_IDS.filter(id => id !== "medILlama").map((agentId) => (
-            <Card key={agentId}>
-              <CardHeader className="pb-3">
-                <CardTitle className="capitalize flex justify-between items-center">
-                  <span>{agentId} Agent</span>
-                  {activeAgents.has(agentId) ? (
-                    <Badge variant="success" className="animate-pulse">Active</Badge>
-                  ) : agentOutputs[agentId] ? (
-                    <Badge variant="outline">Completed</Badge>
-                  ) : null}
-                </CardTitle>
-              </CardHeader>
-              <CardContent 
-                className={`h-96 overflow-y-auto p-4 transition-all duration-300 ${
-                  activeAgents.has(agentId) ? "bg-blue-50" : "bg-white"
-                }`}
-                ref={el => agentRefs.current[agentId] = el}
-              >
-                {agentOutputs[agentId] ? (
-                  <pre className="whitespace-pre-wrap">
-                    {agentOutputs[agentId]}
-                    {activeAgents.has(agentId) && (
-                      <span className="inline-block w-2 h-4 bg-current opacity-75 animate-pulse ml-1">|</span>
-                    )}
-                  </pre>
-                ) : (
-                  <p className="text-gray-500">Agent output will appear here.</p>
-                )}
-              </CardContent>
-            </Card>
+              
+              {/* Agent Outputs Panel - appears under user message */}
+              {message.role === "user" && (
+                <>
+                  {/* Show current agent outputs if this is the last user message - always show, not just when processing */}
+                  {index === chatHistory.length - 1 && (
+                    <div className="bg-[#1A1A2E] rounded-lg p-4 mb-4 border border-[#2A2A3E]">
+                      <div className="mb-2 flex items-center">
+                        {isProcessing ? (
+                          <>
+                            <div className="flex space-x-1 mr-2">
+                              <div className="w-2 h-2 rounded-full bg-[#6D5ACF] animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                              <div className="w-2 h-2 rounded-full bg-[#6D5ACF] animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                              <div className="w-2 h-2 rounded-full bg-[#6D5ACF] animate-bounce" style={{ animationDelay: "600ms" }}></div>
+                            </div>
+                            <span className="text-sm text-gray-400">Thinking...</span>
+                          </>
+                        ) : (
+                          <span className="text-sm text-gray-400">Processing complete</span>
+                        )}
+                      </div>
+                      
+                      {/* Active Agent Panels */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {AGENT_IDS.map(agentId => (
+                          activeAgents.has(agentId) || currentAgentOutputs[agentId] ? (
+                            <Card 
+                              key={agentId}
+                              className="bg-[#1E1E26] border-none shadow-md transition-all duration-300"
+                            >
+                              <CardHeader className="py-2 px-3">
+                                <CardTitle className="capitalize text-xs flex justify-between items-center">
+                                  <span>{agentId}</span>
+                                  {activeAgents.has(agentId) ? (
+                                    <Badge variant="success" className="animate-pulse text-xs h-5">Active</Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs h-5">Completed</Badge>
+                                  )}
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent 
+                                className="max-h-40 overflow-y-auto p-3 text-xs font-mono text-gray-300"
+                                ref={el => agentRefs.current[agentId] = el}
+                              >
+                                <div className="whitespace-pre-wrap">
+                                  {currentAgentOutputs[agentId]}
+                                  {activeAgents.has(agentId) && (
+                                    <span className="inline-block w-1.5 h-3 bg-[#6D5ACF] opacity-75 animate-pulse ml-1">|</span>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ) : null
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Show saved agent outputs for previous user messages */}
+                  {message.agents && Object.keys(message.agents).length > 0 && (
+                    <div className="bg-[#1A1A2E] rounded-lg p-4 mb-4 border border-[#2A2A3E]">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {Object.entries(message.agents).map(([agentId, output]) => (
+                          output ? (
+                            <Card 
+                              key={agentId}
+                              className="bg-[#1E1E26] border-none shadow-md"
+                            >
+                              <CardHeader className="py-2 px-3">
+                                <CardTitle className="capitalize text-xs flex justify-between items-center">
+                                  <span>{agentId}</span>
+                                  <Badge variant="outline" className="text-xs h-5">Completed</Badge>
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="max-h-40 overflow-y-auto p-3 text-xs font-mono text-gray-300">
+                                <div className="whitespace-pre-wrap">{output}</div>
+                              </CardContent>
+                            </Card>
+                          ) : null
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {/* Assistant Message */}
+              {message.role === "assistant" && (
+                <div className="flex justify-start mb-4">
+                  <div className="bg-[#1A1A2E] rounded-lg p-4 max-w-[80%] border-l-4 border-[#6D5ACF]">
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Compile Agent Output as a Chatbot Response */}
+              {message.role === "assistant" && message.agents && message.agents["compile"] && (
+                <div className="flex justify-start mb-4 animation-fade-in-up" style={{ animationDelay: "300ms" }}>
+                  <div className="bg-[#1A1A2E] rounded-lg p-4 max-w-[80%] border-l-4 border-[#6D5ACF]">
+                    <div className="text-xs text-gray-400 mb-1">Compiled Result</div>
+                    <p className="whitespace-pre-wrap font-mono">{message.agents["compile"]}</p>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
+          
+          {/* Element for scrolling to bottom */}
+          <div ref={bottomRef} />
         </div>
       </div>
       
-      {/* Debug panel - uncomment to see all raw messages */}
-      {/*
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>WebSocket Debug</CardTitle>
-        </CardHeader>
-        <CardContent className="h-48 overflow-y-auto p-4 bg-gray-100">
-          <div>Active Agents: {[...activeAgents].join(', ')}</div>
-          <pre>{JSON.stringify(agentOutputs, null, 2)}</pre>
-        </CardContent>
-      </Card>
-      */}
+      {/* Fixed Input Bar at Bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#121212] border-t border-[#2A2A3E] py-4 px-4">
+        <div className="w-full max-w-4xl mx-auto">
+          <form
+            className="relative rounded-full shadow-lg overflow-hidden"
+            onSubmit={sendMessage}
+          >
+            <Input
+              placeholder="Ask anything..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full py-6 px-6 bg-[#1E1E1E] border-none text-gray-100 focus:outline-none focus:ring-0 focus:border-none placeholder:text-gray-500"
+            />
+            <Button 
+              type="submit" 
+              disabled={!query.trim() || connectionStatus !== "Connected"}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full p-3 bg-[#6D5ACF] hover:bg-[#8A7CE0] transition-colors"
+            >
+              <SendIcon size={18} />
+            </Button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }
