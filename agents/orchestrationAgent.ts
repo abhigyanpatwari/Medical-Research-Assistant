@@ -1,6 +1,6 @@
 import { DecompositionSchema, DecompositionSchemaType } from "../schemas/decompositionSchema.ts";
 import { taskDecompositionPrompt, improvementPrompt } from "../utils/prompts.ts";
-import { StateType } from "../schemas/stateSchema.ts";
+import { StateType, OrchestrationData } from "../schemas/stateSchema.ts";
 import { LLM } from "../config.ts";
 import { MAX_ITERATIONS } from "../config.ts";
 
@@ -28,14 +28,26 @@ export async function orchestrateQuery(state: StateType) {
       userQuery: state.userQuery
     }) as DecompositionSchemaType;
     
+    // Create orchestration data with reasoning and plan
+    const orchestrationData: OrchestrationData = {
+      requiredAgents: improvedDecomposition.requiredAgents,
+      reasoning: `Improvement based on feedback: ${state.reflectionFeedback}`,
+      plan: `Revised plan for iteration ${(state.iterationCount ?? 0) + 1}: 
+${improvedDecomposition.requiredAgents.medILlama ? '1. Use MedILlama for medical expertise' : ''}
+${improvedDecomposition.requiredAgents.webSearch ? '2. Use Web Search for latest information' : ''}
+${improvedDecomposition.requiredAgents.rag ? '3. Use RAG for contextual knowledge' : ''}`
+    };
+    
     return { 
       ...state, 
-      requiredAgents: improvedDecomposition.requiredAgents,
+      orchestrationData: orchestrationData,
       tasks: {
         MedILlama: improvedDecomposition.tasks.MedILlama || [],
         WebSearch: improvedDecomposition.tasks.Web || [],
         // RAG: improvedDecomposition.tasks.RAG || []
-      }
+      },
+      // Keep the requiredAgents for backward compatibility
+      requiredAgents: improvedDecomposition.requiredAgents
     };
   }
 
@@ -47,13 +59,26 @@ export async function orchestrateQuery(state: StateType) {
     userQuery: state.userQuery 
   }) as DecompositionSchemaType;
 
+  // Create orchestration data with reasoning and plan for initial decomposition
+  const orchestrationData: OrchestrationData = {
+    requiredAgents: initialDecomposition.requiredAgents,
+    reasoning: `Initial analysis of query: "${state.userQuery}"`,
+    plan: `Execution plan:
+${initialDecomposition.requiredAgents.medILlama ? '1. Use MedILlama for medical expertise' : ''}
+${initialDecomposition.requiredAgents.webSearch ? '2. Use Web Search for latest information' : ''}
+${initialDecomposition.requiredAgents.rag ? '3. Use RAG for contextual knowledge' : ''}
+4. Compile results into comprehensive response`
+  };
+
   return { 
     ...state, 
-    requiredAgents: initialDecomposition.requiredAgents,
+    orchestrationData: orchestrationData,
     tasks: {
       MedILlama: initialDecomposition.tasks.MedILlama || [],
       WebSearch: initialDecomposition.tasks.Web || [],
       // RAG: initialDecomposition.tasks.RAG || []
-    }
+    },
+    // Keep the requiredAgents for backward compatibility
+    requiredAgents: initialDecomposition.requiredAgents
   };
 }

@@ -1,5 +1,5 @@
 import { BaseMessage } from "npm:@langchain/core/messages";
-import { RequiredAgents } from "../schemas/stateSchema.ts";
+import { RequiredAgents, OrchestrationData } from "../schemas/stateSchema.ts";
 
 export const StateAnnotation = {
   messages: {
@@ -30,6 +30,10 @@ export const StateAnnotation = {
     value: (_old: string, update: string) => update,
     default: () => "",
   },
+  webSearchResults: {
+    value: (_old: any, update: any) => update,
+    default: () => [],
+  },
   finalResponse: {
     value: (_old: string, update: string) => update,
     default: () => "", 
@@ -52,6 +56,18 @@ export const StateAnnotation = {
       medILlama: false,
       webSearch: false,
       rag: false
+    }),
+  },
+  orchestrationData: {
+    value: (_old: OrchestrationData | undefined, update: OrchestrationData) => update,
+    default: () => ({
+      requiredAgents: {
+        medILlama: false,
+        webSearch: false,
+        rag: false
+      },
+      reasoning: "",
+      plan: ""
     }),
   },
   iterationCount: {

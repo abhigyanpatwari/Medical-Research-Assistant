@@ -14,6 +14,14 @@ export const StateSchema = z.object({
   tasks: z.any(),
   medILlamaResponse: z.string().default(""),
   webSearchResponse: z.string().default(""),
+  webSearchResults: z.array(z.object({
+    query: z.string(),
+    results: z.array(z.object({
+      url: z.string(),
+      title: z.string(),
+      content: z.string().optional()
+    }))
+  })).optional(),
   finalResponse: z.string().default(""),
   isSimpleQuery: z.boolean(),
   iterationCount: z.number().optional(),
@@ -23,6 +31,15 @@ export const StateSchema = z.object({
     medILlama: z.boolean(),
     webSearch: z.boolean(),
     rag: z.boolean()
+  }).optional(),
+  orchestrationData: z.object({
+    requiredAgents: z.object({
+      medILlama: z.boolean(),
+      webSearch: z.boolean(),
+      rag: z.boolean()
+    }),
+    reasoning: z.string().optional(),
+    plan: z.string().optional()
   }).optional()
 });
 
@@ -32,11 +49,26 @@ export interface RequiredAgents {
   rag: boolean;
 }
 
+// Add a new interface for orchestration data
+export interface OrchestrationData {
+  requiredAgents: RequiredAgents;
+  reasoning?: string;
+  plan?: string;
+}
+
 export interface StateType {
   messages: BaseMessage[];
   userQuery: string;
   medILlamaResponse: string;
   webSearchResponse: string;
+  webSearchResults?: Array<{
+    query: string;
+    results: Array<{
+      url: string;
+      title: string;
+      content?: string;
+    }>;
+  }>;
   finalResponse: string;
   tasks?: any;
   isSimpleQuery: boolean;
@@ -44,5 +76,6 @@ export interface StateType {
   reflectionFeedback?: string | null;
   qualityPassed?: boolean;
   requiredAgents?: RequiredAgents;
+  orchestrationData?: OrchestrationData;
 } 
 

@@ -94,7 +94,8 @@ export async function webSearchAgent(state: StateType) {
     console.log(`\n✅ Web Search Agent Completed`);
     return { 
       ...state, 
-      webSearchResponse: summaryContent
+      webSearchResponse: summaryContent,
+      webSearchResults: allResults  // Store the raw results
     };
   } catch (err: unknown) {
     const error = err as Error;
