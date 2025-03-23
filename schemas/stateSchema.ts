@@ -52,8 +52,8 @@ export interface RequiredAgents {
 // Add a new interface for orchestration data
 export interface OrchestrationData {
   requiredAgents: RequiredAgents;
-  reasoning?: string;
-  plan?: string;
+  // reasoning?: string;
+  // plan?: string;
 }
 
 export interface StateType {

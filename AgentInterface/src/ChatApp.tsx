@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { SendIcon, Cpu, Search, Brain, Code, ListChecks, RefreshCcw, Database, ChevronDown, ChevronUp } from "lucide-react";
+import { SendIcon, Cpu, Search, Brain, Code, ListChecks, RefreshCcw, Database, ChevronDown, ChevronUp, X } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
@@ -10,6 +10,7 @@ import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from "framer-motion";
 import AgentDiagram from "./components/AgentDiagram";
 import { AGENT_NODES } from "./components/AgentDiagram";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // Agent IDs should match the node IDs in your backend
 const AGENT_IDS = ["evaluate", "orchestrate", "medILlama", "web_search", "rag", "compile", "reflect"];
@@ -70,6 +71,7 @@ export function ChatApp() {
   const [agentOutputs, setAgentOutputs] = useState<Record<string, string>>({});
   const [finalResponse, setFinalResponse] = useState<string>("");
   const [userInput, setUserInput] = useState<string>("");
+  const [showResponseModal, setShowResponseModal] = useState<boolean>(false);
   
   // WebSocket reference
   const ws = useRef<WebSocket | null>(null);
@@ -232,11 +234,18 @@ export function ChatApp() {
         console.log("Workflow complete:", data);
         if (data.finalResponse) {
           setFinalResponse(data.finalResponse);
+          
+          // Show the modal with the final response
+          setShowResponseModal(true);
         }
         break;
         
       case "error":
         console.error("Backend error:", data.message);
+        
+        // Show error in the modal
+        setFinalResponse(`**Error:** ${data.message || "An unknown error occurred"}`);
+        setShowResponseModal(true);
         break;
         
       default:
@@ -255,7 +264,7 @@ export function ChatApp() {
   };
   
   // Add this function to handle agent activation with minimum display time
-  const activateAgent = (agentId: string, minDisplayTimeMs = 1500) => {
+  const activateAgent = (agentId: string, minDisplayTimeMs = 3000) => {
     // Add to active agents immediately
     setActiveAgents(prev => {
       const newSet = new Set(prev);
@@ -338,8 +347,18 @@ export function ChatApp() {
         orchestrate: orchestratorOutput
       }));
       
-      // Use the new function instead of directly setting active
-      activateAgent("orchestrate");
+      // Mark orchestrator as active and expanded
+      setActiveAgents(prev => {
+        const newSet = new Set(prev);
+        newSet.add("orchestrate");
+        return newSet;
+      });
+      
+      setExpandedAgents(prev => {
+        const newSet = new Set(prev);
+        newSet.add("orchestrate");
+        return newSet;
+      });
     }
     
     // REFLECTION DATA - new format: data.reflect
@@ -368,8 +387,33 @@ export function ChatApp() {
         reflect: reflectionOutput
       }));
       
-      // Use the new function instead of directly setting active
-      activateAgent("reflect");
+      // Mark reflection as active and expanded
+      setActiveAgents(prev => {
+        const newSet = new Set(prev);
+        newSet.add("reflect");
+        return newSet;
+      });
+      
+      setExpandedAgents(prev => {
+        const newSet = new Set(prev);
+        newSet.add("reflect");
+        return newSet;
+      });
+      
+      // Set appropriate active/completed state
+      if (qualityPassed === false) {
+        setActiveAgents(prev => {
+          const newSet = new Set(prev);
+          newSet.add("reflect");
+          return newSet;
+        });
+      } else if (qualityPassed === true) {
+        setCompletedAgents(prev => {
+          const newSet = new Set(prev);
+          newSet.add("reflect");
+          return newSet;
+        });
+      }
     }
     
     // MEDILLAMA DATA - new format: top-level medILlama
@@ -412,8 +456,18 @@ export function ChatApp() {
         medILlama: medicalOutput
       }));
       
-      // Use the new function instead of directly setting active
-      activateAgent("medILlama");
+      // Mark medILlama as active and expanded
+      setActiveAgents(prev => {
+        const newSet = new Set(prev);
+        newSet.add("medILlama");
+        return newSet;
+      });
+      
+      setExpandedAgents(prev => {
+        const newSet = new Set(prev);
+        newSet.add("medILlama");
+        return newSet;
+      });
     }
     
     // Continue with existing functionality
@@ -480,9 +534,10 @@ export function ChatApp() {
     setActiveAgents(newActiveAgents);
     setCompletedAgents(newCompletedAgents);
     
-    // Update final response if available
+    // Update final response if available and show modal
     if (state.finalResponse) {
       setFinalResponse(state.finalResponse);
+      setShowResponseModal(true);
     }
   };
   
@@ -542,13 +597,6 @@ export function ChatApp() {
     // Clear input
     setQuery("");
   };
-  
-  // Clean up timers when component unmounts
-  useEffect(() => {
-    return () => {
-      Object.values(agentTimers.current).forEach(timer => clearTimeout(timer));
-    };
-  }, []);
   
   return (
     <div className="flex flex-col h-screen bg-[#0f172a] text-white">
@@ -738,6 +786,42 @@ export function ChatApp() {
           </form>
         </div>
       </div>
+      
+      {/* Response Modal */}
+      <Dialog open={showResponseModal} onOpenChange={setShowResponseModal}>
+        <DialogContent className="max-w-3xl bg-[#1e293b] border-[#334155] text-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-cyan-400 flex justify-between items-center">
+              <span>Final Answer</span>
+              <button 
+                onClick={() => setShowResponseModal(false)}
+                className="p-1 rounded-full hover:bg-[#334155] transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="overflow-y-auto max-h-[70vh] markdown-content">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw, rehypeSanitize]}
+              className="prose prose-invert prose-sm max-w-none"
+            >
+              {finalResponse}
+            </ReactMarkdown>
+          </div>
+          
+          <div className="flex justify-end mt-4">
+            <Button
+              onClick={() => setShowResponseModal(false)}
+              className="bg-cyan-600 hover:bg-cyan-700"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
