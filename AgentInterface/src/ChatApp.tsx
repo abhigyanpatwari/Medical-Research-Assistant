@@ -67,6 +67,12 @@ const styles = {
     backdropFilter: 'blur(10px)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+  },
+  cyanGlass: {
+    background: 'rgba(0, 0, 0, 0.2)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(6, 182, 212, 0.1)',
+    boxShadow: '0 8px 32px rgba(6, 182, 212, 0.2)'
   }
 };
 
@@ -93,6 +99,12 @@ export function ChatApp() {
   
   // Make sure this state exists for modal control
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Add a state to control when to show the notification
+  const [showResponseNotification, setShowResponseNotification] = useState(false);
+  
+  // Add this state declaration near your other useState declarations
+  const [isNotificationDismissed, setIsNotificationDismissed] = useState(false);
   
   // Add function to open/close modal
   const openResponseModal = () => setIsModalOpen(true);
@@ -288,16 +300,21 @@ export function ChatApp() {
         // Use our stored finalResponse
         if (lastFinalResponse.current) {
           setFinalResponse(lastFinalResponse.current);
-          setShowResponseModal(true);
+          // Show notification only when workflow ends
+          setShowResponseNotification(true);
         } else {
           console.warn("No finalResponse found after workflow completion");
           setFinalResponse("**No response was generated.** Please try again with a different query.");
-          setShowResponseModal(true);
+          // Show notification for error case too
+          setShowResponseNotification(true);
         }
         break;
         
       case "error":
         console.error("Backend error:", data.message);
+        // Set an error response and show notification
+        setFinalResponse(`**Error:** ${data.message || "An unknown error occurred."}`);
+        setShowResponseNotification(true);
         break;
         
       default:
@@ -630,6 +647,10 @@ export function ChatApp() {
     // Store user input for display
     setUserInput(query);
     
+    // Reset notification state
+    setShowResponseNotification(false);
+    setIsNotificationDismissed(false);
+    
     // Reset active and completed agents
     setActiveAgents(new Set());
     setCompletedAgents(new Set());
@@ -675,16 +696,38 @@ export function ChatApp() {
           </div>
         </header>
         
-        {/* User Query Display */}
+        {/* User Query Display with Cyan Glassmorphism */}
         {userInput && (
-          <div className="bg-[#1e293b] border-b border-[#2d3748] p-3">
-            <div className="w-full max-w-6xl mx-auto">
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-400">Your query:</div>
-                <Badge className="bg-[#0ea5e9]">User Input</Badge>
+          <div className="px-4 py-3">
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full max-w-6xl mx-auto rounded-lg overflow-hidden"
+              style={{
+                ...styles.cyanGlass,
+                boxShadow: '0 0 20px rgba(6, 182, 212, 0.15)',
+                border: '1px solid rgba(6, 182, 212, 0.3)'
+              }}
+            >
+              <div className="p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-cyan-400"></div>
+                    <span className="text-sm font-medium text-cyan-300">Your Query</span>
+                  </div>
+                  <Badge 
+                    className="text-cyan-100"
+                    style={{
+                      background: 'rgba(8, 145, 178, 0.3)',
+                      border: '1px solid rgba(6, 182, 212, 0.4)'
+                    }}
+                  >
+                    User Input
+                  </Badge>
+                </div>
+                <div className="mt-2 text-white leading-relaxed">{userInput}</div>
               </div>
-              <div className="mt-1 text-white">{userInput}</div>
-            </div>
+            </motion.div>
           </div>
         )}
         
@@ -711,7 +754,7 @@ export function ChatApp() {
                 const isSelected = selectedAgent === agentId;
                 
                 // Always show these critical agents regardless of state
-                const criticalAgents = ["orchestrate", "medILlama", "web_search", "compile", "reflect"];
+                const criticalAgents = ["evaluate","orchestrate", "medILlama", "web_search", "compile", "reflect"];
                 const isKeyAgent = criticalAgents.includes(agentId);
                 
                 // Always show critical agents and any with activity
@@ -878,7 +921,7 @@ export function ChatApp() {
       </div>
       
       {/* Final Response Modal */}
-      {finalResponse && (
+      {finalResponse && showResponseNotification && (
         <div className="fixed bottom-24 left-0 right-0 flex justify-center items-center z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
