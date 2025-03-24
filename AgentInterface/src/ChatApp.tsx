@@ -858,7 +858,7 @@ export function ChatApp() {
               })}
               
               {/* Final Response Section with cyan glassmorphism */}
-              {finalResponse && (
+              {/* {finalResponse && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -882,7 +882,7 @@ export function ChatApp() {
                     </div>
                   </div>
                 </motion.div>
-              )}
+              )} */}
             </div>
           </div>
         </div>
@@ -1030,24 +1030,137 @@ export function ChatApp() {
               onClick={e => e.stopPropagation()} // Prevent clicks inside from closing
             >
               <div className="p-6">
-                <button 
-                  onClick={closeResponseModal}
-                  className="absolute top-4 right-4 p-2 rounded-full hover:bg-cyan-800/40 transition-colors"
-                  aria-label="Close modal"
-                >
-                  <X size={20} className="text-cyan-200" />
-                </button>
-                
-                <h2 className="text-xl font-bold text-cyan-300 mb-4">Medical Response</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-cyan-300">Medical Research Report</h2>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(finalResponse);
+                        // Optional: Add notification toast here
+                        alert("Response copied to clipboard!");
+                      }}
+                      size="sm"
+                      className="bg-cyan-700 hover:bg-cyan-600 text-cyan-100 flex items-center gap-1"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                      Copy
+                    </Button>
+                    <button 
+                      onClick={closeResponseModal}
+                      className="p-2 rounded-full hover:bg-cyan-800/40 transition-colors"
+                      aria-label="Close modal"
+                    >
+                      <X size={20} className="text-cyan-200" />
+                    </button>
+                  </div>
+                </div>
                 
                 <div className="overflow-y-auto pr-2 max-h-[60vh]" style={{ 
                   scrollbarWidth: "thin",
                   scrollbarColor: "rgba(6, 182, 212, 0.3) rgba(0, 0, 0, 0.2)"
                 }}>
-                  <div className="prose prose-invert prose-cyan prose-headings:text-cyan-200 prose-a:text-cyan-300 max-w-none">
+                  <div className="prose prose-invert max-w-none custom-markdown">
+                    <style jsx global>{`
+                      .custom-markdown h1 {
+                        font-size: 1.8rem;
+                        color: #67e8f9;
+                        margin-top: 1.5rem;
+                        margin-bottom: 1rem;
+                        font-weight: 700;
+                      }
+                      .custom-markdown h2 {
+                        font-size: 1.5rem;
+                        color: #22d3ee;
+                        margin-top: 1.4rem;
+                        margin-bottom: 0.8rem;
+                        font-weight: 600;
+                      }
+                      .custom-markdown h3 {
+                        font-size: 1.25rem;
+                        color: #06b6d4;
+                        margin-top: 1.3rem;
+                        margin-bottom: 0.6rem;
+                        font-weight: 600;
+                      }
+                      .custom-markdown p {
+                        margin-top: 0.75rem;
+                        margin-bottom: 0.75rem;
+                        line-height: 1.6;
+                      }
+                      .custom-markdown ul, .custom-markdown ol {
+                        margin-top: 0.5rem;
+                        margin-bottom: 0.5rem;
+                        padding-left: 1.5rem;
+                      }
+                      .custom-markdown li {
+                        margin-top: 0.25rem;
+                        margin-bottom: 0.25rem;
+                      }
+                      .custom-markdown a {
+                        color: #0ea5e9;
+                        text-decoration: underline;
+                      }
+                      .custom-markdown blockquote {
+                        border-left: 3px solid #0ea5e9;
+                        padding-left: 1rem;
+                        margin-left: 0;
+                        color: #94a3b8;
+                      }
+                      .custom-markdown code {
+                        background: rgba(8, 145, 178, 0.2);
+                        padding: 0.2rem 0.4rem;
+                        border-radius: 3px;
+                        font-family: monospace;
+                      }
+                      .custom-markdown pre {
+                        background: rgba(15, 23, 42, 0.7);
+                        padding: 1rem;
+                        border-radius: 6px;
+                        overflow-x: auto;
+                        border: 1px solid rgba(6, 182, 212, 0.2);
+                      }
+                      .custom-markdown sup {
+                        color: #0ea5e9;
+                        font-weight: bold;
+                        cursor: pointer;
+                        padding: 0 3px;
+                      }
+                      .custom-markdown sup a {
+                        text-decoration: none;
+                        background: rgba(8, 145, 178, 0.2);
+                        padding: 0px 5px;
+                        border-radius: 10px;
+                      }
+                      .custom-markdown table {
+                        border-collapse: collapse;
+                        width: 100%;
+                        margin: 1rem 0;
+                      }
+                      .custom-markdown th, .custom-markdown td {
+                        border: 1px solid rgba(6, 182, 212, 0.3);
+                        padding: 0.5rem;
+                      }
+                      .custom-markdown th {
+                        background: rgba(8, 145, 178, 0.2);
+                        color: #22d3ee;
+                      }
+                    `}</style>
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                      components={{
+                        // Customize citation rendering
+                        sup: ({node, ...props}) => {
+                          return <sup {...props} className="text-cyan-400 hover:text-cyan-300" />;
+                        },
+                        // Make links more visible
+                        a: ({node, ...props}) => {
+                          return <a {...props} className="text-cyan-400 hover:underline" />;
+                        }
+                      }}
                     >
                       {finalResponse}
                     </ReactMarkdown>
