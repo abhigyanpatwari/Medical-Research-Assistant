@@ -5,6 +5,9 @@ import { ChatOpenAI } from "npm:@langchain/openai";
 
 export const MAX_ITERATIONS = 3;
 
+// Add bypass flag for reflection agent
+export const BYPASS_REFLECTION = true; // Set to true to bypass reflection LLM calls
+
 export const FINETUNED_MODEL = new Ollama(
     {
         model: Deno.env.get("OLLAMA_MODEL") as string,

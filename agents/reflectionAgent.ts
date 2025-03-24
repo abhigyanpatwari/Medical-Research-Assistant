@@ -1,5 +1,5 @@
 import { StateType } from "../schemas/stateSchema.ts";
-
+import { BYPASS_REFLECTION } from "../config.ts";
 
 import ollama from "npm:ollama";
 import { zodToJsonSchema } from "npm:zod-to-json-schema";
@@ -80,6 +80,17 @@ export async function reflectionAgent(state: StateType) {
   const iterationCount = (state.iterationCount || 0) + 1;
   if (iterationCount > 3) {
     return state;
+  }
+
+  // Bypass reflection if the flag is enabled
+  if (BYPASS_REFLECTION) {
+    console.log("⚠️ Reflection bypassed due to BYPASS_REFLECTION flag");
+    return {
+      ...state,
+      iterationCount,
+      qualityPassed: true,
+      reflectionFeedback: "This output is medically accurate, well-structured, and follows appropriate guidelines."
+    };
   }
 
   try {

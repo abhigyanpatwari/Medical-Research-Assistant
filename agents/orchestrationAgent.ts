@@ -4,7 +4,7 @@ import { StateType, OrchestrationData } from "../schemas/stateSchema.ts";
 import { LLM } from "../config.ts";
 import { MAX_ITERATIONS } from "../config.ts";
 
-const model = LLM;
+const model = LLM;  
 
 export async function orchestrateQuery(state: StateType) {
   // Reset accumulated responses for a new iteration!
