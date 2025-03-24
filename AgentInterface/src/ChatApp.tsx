@@ -67,12 +67,6 @@ const styles = {
     backdropFilter: 'blur(10px)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
-  },
-  cyanGlass: {
-    background: 'rgba(0, 0, 0, 0.2)',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(6, 182, 212, 0.1)',
-    boxShadow: '0 8px 32px rgba(6, 182, 212, 0.2)'
   }
 };
 
@@ -105,6 +99,13 @@ export function ChatApp() {
   
   // Add this state declaration near your other useState declarations
   const [isNotificationDismissed, setIsNotificationDismissed] = useState(false);
+  
+  // Add sample questions state (place near other state declarations)
+  const [sampleQuestions] = useState([
+    "What are the latest advancements in cancer research?",
+    "How has stem cell therapy advanced in the last 5 years?",
+    "For a patient with fever, cough and fatigue, what are potential diagnoses?"
+  ]);
   
   // Add function to open/close modal
   const openResponseModal = () => setIsModalOpen(true);
@@ -677,6 +678,30 @@ export function ChatApp() {
     setQuery("");
   };
   
+  // Function to select and submit a sample question
+  const handleSampleQuestionClick = (question: string) => {
+    setQuery(question);
+    // Optional: auto-submit the question
+    if (connectionStatus === "Connected" && ws.current) {
+      setIsInitialState(false);
+      setUserInput(question);
+      setShowResponseNotification(false);
+      setIsNotificationDismissed(false);
+      setActiveAgents(new Set());
+      setCompletedAgents(new Set());
+      setAgentOutputs(prev => {
+        const newOutputs = { ...prev };
+        Object.keys(newOutputs).forEach(agent => {
+          newOutputs[agent] = `${agent} will be activated when needed...`;
+        });
+        return newOutputs;
+      });
+      setFinalResponse("");
+      lastFinalResponse.current = "";
+      ws.current.send(JSON.stringify({ userQuery: question }));
+    }
+  };
+  
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-950 to-black text-white">
       {/* Main content */}
@@ -696,38 +721,16 @@ export function ChatApp() {
           </div>
         </header>
         
-        {/* User Query Display with Cyan Glassmorphism */}
+        {/* User Query Display */}
         {userInput && (
-          <div className="px-4 py-3">
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="w-full max-w-6xl mx-auto rounded-lg overflow-hidden"
-              style={{
-                ...styles.cyanGlass,
-                boxShadow: '0 0 20px rgba(6, 182, 212, 0.15)',
-                border: '1px solid rgba(6, 182, 212, 0.3)'
-              }}
-            >
-              <div className="p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-cyan-400"></div>
-                    <span className="text-sm font-medium text-cyan-300">Your Query</span>
-                  </div>
-                  <Badge 
-                    className="text-cyan-100"
-                    style={{
-                      background: 'rgba(8, 145, 178, 0.3)',
-                      border: '1px solid rgba(6, 182, 212, 0.4)'
-                    }}
-                  >
-                    User Input
-                  </Badge>
-                </div>
-                <div className="mt-2 text-white leading-relaxed">{userInput}</div>
+          <div className="bg-[#1e293b] border-b border-[#2d3748] p-3">
+            <div className="w-full max-w-6xl mx-auto">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-400">Your query:</div>
+                <Badge className="bg-[#0ea5e9]">User Input</Badge>
               </div>
-            </motion.div>
+              <div className="mt-1 text-white">{userInput}</div>
+            </div>
           </div>
         )}
         
@@ -919,6 +922,36 @@ export function ChatApp() {
           </div>
         </form>
       </div>
+      
+      {/* Sample Questions - only visible in initial state */}
+      {isInitialState && (
+        <div 
+          className="fixed top-[60%] left-0 right-0 px-4 py-8 flex justify-center"
+          style={{ zIndex: 40 }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-5xl">
+            {sampleQuestions.map((question, index) => (
+              <div
+                key={index}
+                onClick={() => handleSampleQuestionClick(question)}
+                className="rounded-lg p-4 cursor-pointer transition-all duration-300 hover:translate-y-[-5px]"
+                style={{
+                  background: 'rgba(17, 24, 39, 0.8)',  // Dark grayish background
+                  border: '1px solid rgba(6, 182, 212, 0.3)',
+                  boxShadow: '0 0 20px rgba(6, 182, 212, 0.25)', // Cyan glow
+                  backdropFilter: 'blur(8px)'
+                }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-2 w-2 rounded-full bg-cyan-400"></div>
+                  <span className="text-sm font-medium text-cyan-300">Sample Question {index + 1}</span>
+                </div>
+                <p className="text-white">{question}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Final Response Modal */}
       {finalResponse && showResponseNotification && (
