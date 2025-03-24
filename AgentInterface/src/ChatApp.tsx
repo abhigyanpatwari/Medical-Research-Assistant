@@ -723,14 +723,29 @@ export function ChatApp() {
         
         {/* User Query Display */}
         {userInput && (
-          <div className="bg-[#1e293b] border-b border-[#2d3748] p-3">
-            <div className="w-full max-w-6xl mx-auto">
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-400">Your query:</div>
-                <Badge className="bg-[#0ea5e9]">User Input</Badge>
+          <div className="w-full max-w-6xl mx-auto px-4 mb-6 mt-2">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="rounded-lg border border-cyan-500/20 overflow-hidden"
+              style={{
+                ...styles.glassBg,
+                boxShadow: '0 0 20px rgba(6, 182, 212, 0.2)',
+                backdropFilter: 'blur(10px)'
+              }}
+            >
+              <div className="p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="text-sm text-cyan-300 font-medium flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-cyan-400"></span>
+                    Your query
+                  </div>
+                  <Badge className="bg-[#0ea5e9]">User Input</Badge>
+                </div>
+                <div className="mt-1 text-white">{userInput}</div>
               </div>
-              <div className="mt-1 text-white">{userInput}</div>
-            </div>
+            </motion.div>
           </div>
         )}
         
@@ -882,9 +897,10 @@ export function ChatApp() {
           transform: `translate(-50%, ${isInitialState ? '-50%' : '0'})`,
           top: isInitialState ? '50%' : 'auto',
           bottom: isInitialState ? 'auto' : '20px',
-          width: isInitialState ? '70%' : '90%',
-          maxWidth: isInitialState ? '600px' : '1200px',
-          borderRadius: isInitialState ? '16px' : '9999px',
+          width: isInitialState ? '70%' : '600px',
+          maxWidth: isInitialState ? '600px' : '800px',
+          borderRadius: '12px',
+          padding: '8px',
           transition: 'all 0.5s ease-in-out',
           zIndex: 50
         }}
@@ -897,7 +913,7 @@ export function ChatApp() {
             placeholder="Ask a medical question..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full py-5 px-6 bg-transparent border-0 text-white focus:outline-none focus:ring-0"
+            className="w-full py-3 pl-8 pr-5 bg-transparent border-0 text-white focus:outline-none focus:ring-0"
             style={{ background: 'transparent' }}
           />
           <button 
@@ -959,9 +975,10 @@ export function ChatApp() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-lg p-4 bg-cyan-900/20 border border-cyan-500/30 shadow-lg max-w-md mx-auto"
+            className="rounded-lg p-4 bg-gray-900/90 border border-cyan-500/30 shadow-lg max-w-md mx-auto"
             style={{
-              boxShadow: '0 0 20px rgba(6, 182, 212, 0.2)',
+              boxShadow: '0 0 20px rgba(6, 182, 212, 0.5)',
+              backdropFilter: 'blur(12px)'
             }}
           >
             <div className="text-center">

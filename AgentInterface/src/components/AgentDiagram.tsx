@@ -137,6 +137,22 @@ const AgentDiagram: React.FC<AgentDiagramProps> = ({
   onSelectAgent,
   selectedAgent,
 }) => {
+  // Compute the active and completed nodes
+  const computedActiveNodes = new Set(activeAgents);
+  const computedCompletedNodes = new Set(completedAgents);
+  
+  // Add __start__ to completed nodes if any agent is active or completed
+  if (activeAgents.size > 0 || completedAgents.size > 0) {
+    computedCompletedNodes.add("__start__");
+  }
+  
+  // Keep Final Output node highlighted (active) when workflow completes
+  if (completedAgents.has("reflect")) {
+    computedActiveNodes.add("__end__");
+    // We also add it to completed nodes for the completed styling
+    computedCompletedNodes.add("__end__");
+  }
+  
   // Error boundary to prevent crashes
   const handleDiagramError = (error: Error) => {
     console.error("AgentDiagram error:", error);
@@ -161,8 +177,8 @@ const AgentDiagram: React.FC<AgentDiagramProps> = ({
         <AgentGraph
           nodes={AGENT_NODES}
           edges={AGENT_EDGES}
-          activeNodes={activeAgents || new Set()}
-          completedNodes={completedAgents || new Set()}
+          activeNodes={computedActiveNodes}
+          completedNodes={computedCompletedNodes}
           onNodeClick={(id) => onSelectAgent && onSelectAgent(id)}
           selectedNode={selectedAgent}
         />
