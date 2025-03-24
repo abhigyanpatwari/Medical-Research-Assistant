@@ -7,6 +7,8 @@ import { z } from "npm:zod";
 
 
 const model = Deno.env.get("OLLAMA_MODEL") as string //Cant use FINETUNED_MODEL import from config here because it's set in a different way for langchain and this agent uses ollama directly
+const baseUrl = Deno.env.get("OLLAMA_BASE_URL") || "http://localhost:11434"
+
 
 const systemPrompt = `You are a specialized medical knowledge quality check agent. Your task is to critically review the following medical response for accuracy, completeness, identify knowledge gaps and adherence to current evidence-based medical standards. Also ensure that the response follows medical guidelines, (if not sure about the guidelines, you can ask it adhere to certain guidelines by web searching it)
 
@@ -93,6 +95,7 @@ export async function reflectionAgent(state: StateType) {
 
     const response = await ollama.chat({
       model: model.toString(),
+      baseUrl: baseUrl,
       messages: [
         { 
           role: "system", 

@@ -8,7 +8,7 @@ export const MAX_ITERATIONS = 3;
 export const FINETUNED_MODEL = new Ollama(
     {
         model: Deno.env.get("OLLAMA_MODEL") as string,
-        baseUrl: Deno.env.get("OLLAMA_BASE_URL") as string,
+        baseUrl: Deno.env.get("OLLAMA_BASE_URL") || "http://localhost:11434",
         maxRetries: 3,
     }
 );
