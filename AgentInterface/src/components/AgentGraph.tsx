@@ -109,6 +109,15 @@ export const AgentGraph: React.FC<AgentGraphProps> = ({
     
     if (!fromNode || !toNode) return { x: 0, y: 0 };
     
+    // Special case for the feedback loop label
+    if (edge.from === "reflect" && edge.to === "orchestrate") {
+      // Position the label near the middle of the curved path but slightly offset
+      const midX = (fromNode.position.x + toNode.position.x) / 2;
+      const midY = Math.min(fromNode.position.y, toNode.position.y) - 25;
+      return { x: midX, y: midY };
+    }
+    
+    // Default positioning for other edge labels
     return {
       x: (fromNode.position.x + toNode.position.x) / 2,
       y: (fromNode.position.y + toNode.position.y) / 2 - 10
@@ -176,25 +185,42 @@ export const AgentGraph: React.FC<AgentGraphProps> = ({
           
           // Group labels
           if (node.id.startsWith('group_')) {
+            // Get all nodes that belong to this group
+            const groupId = node.id.replace('group_', '');
+            const groupNodes = nodes.filter(n => n.group === groupId);
+            
+            // Skip rendering if no nodes in this group
+            if (groupNodes.length === 0) return null;
+            
+            // Calculate dimensions to ensure it contains all group nodes
+            let minX = Math.min(...groupNodes.map(n => n.position.x)) - 60;
+            let maxX = Math.max(...groupNodes.map(n => n.position.x)) + 60;
+            let minY = Math.min(...groupNodes.map(n => n.position.y)) - 40;
+            let maxY = Math.max(...groupNodes.map(n => n.position.y)) + 40;
+            
+            // Ensure minimum dimensions
+            const width = Math.max(maxX - minX, 180);
+            const height = Math.max(maxY - minY, 200);
+            
             return (
               <g key={node.id}>
                 <rect
-                  x={node.position.x - 100}
-                  y={node.position.y - 30}
-                  width={200}
-                  height={150}
+                  x={minX}
+                  y={minY}
+                  width={width}
+                  height={height}
                   rx={10}
                   ry={10}
-                  fill="rgba(15, 23, 42, 0.3)"
-                  stroke="#2d3748"
+                  fill="rgba(8, 145, 178, 0.05)"
+                  stroke="rgba(6, 182, 212, 0.2)"
                   strokeWidth="1"
                   strokeDasharray="5 5"
                 />
                 <text
-                  x={node.position.x}
-                  y={node.position.y - 15}
+                  x={(minX + maxX) / 2}
+                  y={minY - 10}
                   textAnchor="middle"
-                  fill="#94a3b8"
+                  fill="#a5f3fc"
                   fontSize="14"
                 >
                   {node.label}

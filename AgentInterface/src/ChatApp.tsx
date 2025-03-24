@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { SendIcon, Cpu, Search, Brain, Code, ListChecks, RefreshCcw, Database, ChevronDown, ChevronUp } from "lucide-react";
+import { SendIcon, Cpu, Search, Brain, Code, ListChecks, RefreshCcw, Database, ChevronDown, ChevronUp, X } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
@@ -60,6 +60,16 @@ const AGENT_CONFIG = {
   }
 };
 
+// Add this CSS directly to your component
+const styles = {
+  glassBg: {
+    background: 'rgba(0, 0, 0, 0.2)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+  }
+};
+
 export function ChatApp() {
   const [query, setQuery] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("Disconnected");
@@ -70,6 +80,7 @@ export function ChatApp() {
   const [agentOutputs, setAgentOutputs] = useState<Record<string, string>>({});
   const [finalResponse, setFinalResponse] = useState<string>("");
   const [userInput, setUserInput] = useState<string>("");
+  const [isInitialState, setIsInitialState] = useState(!userInput); // Start centered if no user input
   
   // WebSocket reference
   const ws = useRef<WebSocket | null>(null);
@@ -79,6 +90,13 @@ export function ChatApp() {
   
   // Add a ref to store the finalResponse separately from state
   const lastFinalResponse = useRef<string>("");
+  
+  // Make sure this state exists for modal control
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Add function to open/close modal
+  const openResponseModal = () => setIsModalOpen(true);
+  const closeResponseModal = () => setIsModalOpen(false);
   
   // Connect to WebSocket when component mounts
   useEffect(() => {
@@ -606,6 +624,9 @@ export function ChatApp() {
     e.preventDefault();
     if (!query.trim() || connectionStatus !== "Connected" || !ws.current) return;
     
+    // Move chat to bottom position
+    setIsInitialState(false);
+    
     // Store user input for display
     setUserInput(query);
     
@@ -636,23 +657,24 @@ export function ChatApp() {
   };
   
   return (
-    <div className="flex flex-col h-screen bg-[#0f172a] text-white">
-      {/* Top Navigation */}
-      <header className="flex-shrink-0 border-b border-[#1e293b] py-3 px-4">
-        <div className="flex items-center justify-between w-full max-w-6xl mx-auto">
-          <h1 className="text-xl font-bold text-cyan-400">Medical Agent System</h1>
-          <div className="flex items-center gap-3">
-            <Badge 
-              variant={connectionStatus === "Connected" ? "success" : "default"}
-              className="px-3 py-1"
-            >
-              {connectionStatus}
-            </Badge>
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-950 to-black text-white">
+      {/* Main content */}
+      <div className={`flex-1 overflow-y-auto pt-20 pb-32 px-4 ${isInitialState ? 'opacity-0' : 'opacity-100'} transition-opacity duration-500`}>
+        {/* Top Navigation */}
+        <header className="flex-shrink-0 border-b border-[#1e293b] py-3 px-4">
+          <div className="flex items-center justify-between w-full max-w-6xl mx-auto">
+            <h1 className="text-xl font-bold text-cyan-400">Medical Agent System</h1>
+            <div className="flex items-center gap-3">
+              <Badge 
+                variant={connectionStatus === "Connected" ? "success" : "default"}
+                className="px-3 py-1"
+              >
+                {connectionStatus}
+              </Badge>
+            </div>
           </div>
-        </div>
-      </header>
-      
-      <div className="flex-grow flex flex-col overflow-hidden">
+        </header>
+        
         {/* User Query Display */}
         {userInput && (
           <div className="bg-[#1e293b] border-b border-[#2d3748] p-3">
@@ -706,17 +728,18 @@ export function ChatApp() {
                     id={`agent-section-${agentId}`}
                   >
                     <div 
-                      className={`rounded-lg border transition-colors ${
-                        isActive ? 'bg-[#1e293b] border-l-4' : 
-                        isCompleted ? 'bg-[#1e293b] border-l-4' : 
-                        'bg-[#1e293b] border-[#2d3748]'
-                      } ${
-                        isSelected ? 'ring-2 ring-cyan-400' : ''
-                      }`}
                       style={{
+                        ...styles.cyanGlass,
                         borderLeftColor: (isActive || isCompleted) ? 
                           AGENT_CONFIG[agentId as keyof typeof AGENT_CONFIG].color : ''
                       }}
+                      className={`rounded-lg transition-colors ${
+                        isActive ? 'border-l-4' : 
+                        isCompleted ? 'border-l-4' : 
+                        ''
+                      } ${
+                        isSelected ? 'ring-2 ring-cyan-400' : ''
+                      }`}
                     >
                       <div 
                         className="p-3 flex items-center justify-between cursor-pointer"
@@ -728,10 +751,10 @@ export function ChatApp() {
                             {AGENT_CONFIG[agentId as keyof typeof AGENT_CONFIG].title}
                           </span>
                           {isActive && (
-                            <Badge className="bg-cyan-500 text-xs">Active</Badge>
+                            <Badge style={styles.cyanAccent} className="text-cyan-400 text-xs">Active</Badge>
                           )}
                           {isCompleted && !isActive && (
-                            <Badge className="bg-green-600 text-xs">Completed</Badge>
+                            <Badge className="bg-green-600/20 border border-green-600/30 text-green-400 text-xs">Completed</Badge>
                           )}
                         </div>
                         <div>
@@ -747,6 +770,7 @@ export function ChatApp() {
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.2 }}
                             className="border-t border-[#2d3748] p-3"
+                            style={{ borderColor: 'rgba(6, 182, 212, 0.2)' }}
                           >
                             {isActive && !agentOutputs[agentId] ? (
                               <div className="flex gap-1">
@@ -772,17 +796,20 @@ export function ChatApp() {
                 );
               })}
               
-              {/* Final Response Section (only shown when available) */}
+              {/* Final Response Section with cyan glassmorphism */}
               {finalResponse && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <div className="rounded-lg border-2 border-cyan-500 bg-[#1e293b] p-4">
+                  <div 
+                    className="rounded-lg p-4"
+                    style={{...styles.cyanGlass, ...styles.cyanGlow}}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-lg font-medium text-cyan-400">Final Response</h3>
-                      <Badge className="bg-cyan-500">Complete</Badge>
+                      <Badge style={styles.cyanAccent} className="text-cyan-400">Complete</Badge>
                     </div>
                     <div className="prose prose-invert prose-sm max-w-none">
                       <ReactMarkdown
@@ -800,29 +827,144 @@ export function ChatApp() {
         </div>
       </div>
       
-      {/* Fixed Input Bar at Bottom */}
-      <div className="flex-shrink-0 border-t border-[#1e293b] py-4 px-4">
-        <div className="w-full max-w-6xl mx-auto">
-          <form
-            className="relative rounded-full shadow-lg overflow-hidden"
-            onSubmit={sendMessage}
+      {/* Floating Chat Input */}
+      <div 
+        style={{
+          ...styles.glassBg,
+          position: 'fixed',
+          left: '50%',
+          transform: `translate(-50%, ${isInitialState ? '-50%' : '0'})`,
+          top: isInitialState ? '50%' : 'auto',
+          bottom: isInitialState ? 'auto' : '20px',
+          width: isInitialState ? '70%' : '90%',
+          maxWidth: isInitialState ? '600px' : '1200px',
+          borderRadius: isInitialState ? '16px' : '9999px',
+          transition: 'all 0.5s ease-in-out',
+          zIndex: 50
+        }}
+      >
+        <form
+          className="relative w-full"
+          onSubmit={sendMessage}
+        >
+          <Input
+            placeholder="Ask a medical question..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full py-5 px-6 bg-transparent border-0 text-white focus:outline-none focus:ring-0"
+            style={{ background: 'transparent' }}
+          />
+          <button 
+            type="submit" 
+            disabled={!query.trim() || connectionStatus !== "Connected"}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full p-2 transition-colors"
+            style={{ background: 'rgba(8, 145, 178, 0.8)', boxShadow: '0 0 10px rgba(6, 182, 212, 0.5)' }}
           >
-            <Input
-              placeholder="Ask a medical question..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full py-6 px-6 bg-[#1e293b] border-none text-gray-100 focus:outline-none focus:ring-0 focus:border-none placeholder:text-gray-500"
-            />
-            <Button 
-              type="submit" 
-              disabled={!query.trim() || connectionStatus !== "Connected"}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full p-3 bg-[#0ea5e9] hover:bg-[#38bdf8] transition-colors"
-            >
-              <SendIcon size={18} />
-            </Button>
-          </form>
-        </div>
+            <SendIcon size={16} />
+          </button>
+          
+          {/* Connection status indicator */}
+          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${
+              connectionStatus === "Connected" ? "bg-green-500" : 
+              connectionStatus === "Connecting..." ? "bg-yellow-500 animate-pulse" : 
+              "bg-red-500"
+            }`}></div>
+            {isInitialState && (
+              <span className="text-xs text-gray-400"></span>
+            )}
+          </div>
+        </form>
       </div>
+      
+      {/* Final Response Modal */}
+      {finalResponse && (
+        <div className="fixed bottom-24 left-0 right-0 flex justify-center items-center z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-lg p-4 bg-cyan-900/20 border border-cyan-500/30 shadow-lg max-w-md mx-auto"
+            style={{
+              boxShadow: '0 0 20px rgba(6, 182, 212, 0.2)',
+            }}
+          >
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-cyan-300 mb-2">Response Ready</h3>
+              <p className="text-cyan-100 text-sm mb-3">
+                The medical analysis for your query is complete.
+              </p>
+              <Button 
+                onClick={openResponseModal} 
+                className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                style={{
+                  background: 'rgb(8, 144, 178)',
+                  boxShadow: '0 0 10px rgba(6, 182, 212, 0.3)'
+                }}
+              >
+                View Complete Response
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      
+      {/* Modal for displaying the final response */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            style={{ 
+              background: 'rgba(0, 0, 0, 0.7)',
+              backdropFilter: 'blur(8px)'
+            }}
+            onClick={closeResponseModal}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              className="relative w-11/12 max-w-3xl max-h-[80vh] rounded-xl overflow-hidden"
+              style={{
+                background: 'rgba(8, 145, 178, 0.1)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(6, 182, 212, 0.3)',
+                boxShadow: '0 0 30px rgba(6, 182, 212, 0.2)'
+              }}
+              onClick={e => e.stopPropagation()} // Prevent clicks inside from closing
+            >
+              <div className="p-6">
+                <button 
+                  onClick={closeResponseModal}
+                  className="absolute top-4 right-4 p-2 rounded-full hover:bg-cyan-800/40 transition-colors"
+                  aria-label="Close modal"
+                >
+                  <X size={20} className="text-cyan-200" />
+                </button>
+                
+                <h2 className="text-xl font-bold text-cyan-300 mb-4">Medical Response</h2>
+                
+                <div className="overflow-y-auto pr-2 max-h-[60vh]" style={{ 
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "rgba(6, 182, 212, 0.3) rgba(0, 0, 0, 0.2)"
+                }}>
+                  <div className="prose prose-invert prose-cyan prose-headings:text-cyan-200 prose-a:text-cyan-300 max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                    >
+                      {finalResponse}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
